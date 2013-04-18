@@ -26,7 +26,7 @@ from sqlalchemy import *
 from sqlalchemy.orm import *
 
 config = load_config_file()
-uri = get_config(config, 'sqlalchemy', 'uri', None, 'sqlite://')
+uri = get_config(config, 'ansiblereport', 'uri', None, 'sqlite://')
 engine = create_engine(uri, echo=False)
 session = Session(engine)
 Base.metadata.create_all(engine)
