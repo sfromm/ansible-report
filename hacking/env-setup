@@ -1,0 +1,36 @@
+#!/bin/bash
+# usage: source ./hacking/env-setup [-q]
+#    modifies environment for running Ansible from checkout
+
+# When run using source as directed, $0 gets set to bash, so we must use $BASH_SOURCE
+if [ -n "$BASH_SOURCE" ] ; then
+    HACKING_DIR=`dirname $BASH_SOURCE`
+else
+    HACKING_DIR="$PWD/hacking"
+fi
+# The below is an alternative to readlink -fn which doesn't exist on OS X
+# Source: http://stackoverflow.com/a/1678636
+FULL_PATH=`python -c "import os; print(os.path.realpath('$HACKING_DIR'))"`
+ANSIBLEREPORT_HOME=`dirname "$FULL_PATH"`
+
+PREFIX_PYTHONPATH="$ANSIBLEREPORT_HOME/lib"
+PREFIX_PATH="$ANSIBLEREPORT_HOME/bin"
+PREFIX_MANPATH="$ANSIBLEREPORT_HOME/docs/man"
+
+[[ $PYTHONPATH != ${PREFIX_PYTHONPATH}* ]] && export PYTHONPATH=$PREFIX_PYTHONPATH:$PYTHONPATH
+[[ $PATH != ${PREFIX_PATH}* ]] && export PATH=$PREFIX_PATH:$PATH
+export ANSIBLE_CALLBACK_PLUGINS="$ANSIBLEREPORT_HOME/plugins/callback_plugins"
+[[ $MANPATH != ${PREFIX_MANPATH}* ]] && export MANPATH=$PREFIX_MANPATH:$MANPATH
+
+# Print out values unless -q is set
+
+if [ $# -eq 0 -o "$1" != "-q" ] ; then
+    echo ""
+    echo "Setting up to run ansible-report out of checkout..."
+    echo ""
+    echo "PATH=$PATH"
+    echo "PYTHONPATH=$PYTHONPATH"
+    echo "ANSIBLE_CALLBACK_PLUGINS=$ANSIBLE_CALLBACK_PLUGINS"
+    echo "MANPATH=$MANPATH"
+    echo ""
+fi
