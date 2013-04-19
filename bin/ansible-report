@@ -1,0 +1,107 @@
+#!/usr/bin/python
+
+# Written by Stephen Fromm <stephenf nero net>
+# (C) 2012 University of Oregon
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+
+import os
+import json
+import sys
+import json
+import smtplib
+from email.mime.text import MIMEText
+from optparse import OptionParser
+
+import ansiblereport
+from ansiblereport.db import *
+
+DEFAULT_STRFTIME = '%Y-%m-%d %H:%M:%S'
+DEFAULT_LIMIT = 2
+TASK_WARN_RESULTS = ['FAILED', 'ERROR', 'UNREACHABLE']
+TASK_OKAY_RESULTS = ['OK', 'SKIPPED']
+
+def report(options, session):
+    ''' select information from db for reporting on '''
+    clauses = []
+    report = []
+    if options.hostname:
+        for n in options.hostname:
+            clauses.append(AnsibleTask.hostname == n)
+    if options.module_name:
+        for n in options.module_name:
+            clauses.append(AnsibleTask.module == n)
+    results = session.query(AnsibleTask).\
+              filter(or_(*clauses)).\
+              order_by(AnsibleTask.timestamp.desc()).\
+              limit(options.limit)
+    for r in results:
+        brief = "%s %s %s: %s" % (r.timestamp.strftime(DEFAULT_STRFTIME),
+                                  r.hostname, r.module, r.result)
+        if r.result in TASK_WARN_RESULTS:
+            report.append( ( brief, r.data ) )
+        if r.result in TASK_OKAY_RESULTS:
+            if options.verbose:
+                report.append( ( brief, r.data ) )
+    if not report:
+        return None
+    if options.screen:
+        print "---\nTasks\n\n"
+        for task in report:
+            print task[0]
+            print json.dumps(task[1], sort_keys=True, indent=4)
+    if options.email:
+        # TODO
+        pass
+    return None
+
+def version(prog):
+    return "%s %s" % (prog, ansiblereport.__version__)
+
+def main(args):
+    ''' main '''
+    usage = "usage: %prog [options]"
+    parser = OptionParser(usage=usage, version=version("%prog"))
+    parser.add_option('-m', '--module-name', dest='module_name',
+                      action='append',
+                      help="module name(s) to restrict report to")
+    parser.add_option('-n', '--hostname', dest='hostname',
+                      action='append',
+                      help="hostname(s) to restrict report to")
+    parser.add_option('-l', '--limit', metavar='LIMIT',
+                      default=DEFAULT_LIMIT,
+                      help="limit reported events to N")
+    parser.add_option('--email', action='store_true',
+                      default=False,
+                      help="Send email report to configured destination")
+    parser.add_option('--screen', action='store_true',
+                      dest='screen', default=True,
+                      help="Output log information to STDOUT")
+    parser.add_option('--no-screen', action='store_false', dest='screen', 
+                      help="Output log information to STDOUT")
+    parser.add_option('-v', '--verbose', action='store_true', default=False,
+                      help="Be verbose")
+    options, args = parser.parse_args()
+    session = init_db_conn()
+    report(options, session)
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt, e:
+        # Generic handler for ansible specific errors
+        print >> sys.stderr, "error: %s" % str(e)
+        sys.exit(1)
