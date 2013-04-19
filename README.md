@@ -10,7 +10,7 @@ guarantees at this time.
 To configure the callback, configure something like the following in
 your ansible.cfg:
 
-    [ansiblreport]
+    [ansiblereport]
     uri = sqlite:///ansbile.sqlite
 
 This will create a sqlite db in your current working directory.  For
