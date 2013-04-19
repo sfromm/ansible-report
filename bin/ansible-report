@@ -91,7 +91,7 @@ def main(args):
                       dest='screen', default=True,
                       help="Output log information to STDOUT")
     parser.add_option('--no-screen', action='store_false', dest='screen', 
-                      help="Output log information to STDOUT")
+                      help="Do not write log information to STDOUT")
     parser.add_option('-v', '--verbose', action='store_true', default=False,
                       help="Be verbose")
     options, args = parser.parse_args()
