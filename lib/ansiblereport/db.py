@@ -20,9 +20,19 @@ import json
 import datetime
 
 from sqlalchemy import *
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import *
 from sqlalchemy.types import TypeDecorator, Text
 from sqlalchemy.ext.declarative import declarative_base
+
+import ansible.constants as C
+
+def init_db_conn():
+    config = C.load_config_file()
+    uri = C.get_config(config, 'ansiblereport', 'uri', None, 'sqlite://')
+    engine = create_engine(uri, echo=False)
+    session = Session(engine)
+    Base.metadata.create_all(engine)
+    return session
 
 class JSONEncodedDict(TypeDecorator):
     impl = Text
