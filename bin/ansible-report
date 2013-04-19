@@ -54,6 +54,9 @@ def report(options, session):
         if r.result in TASK_WARN_RESULTS:
             report.append( ( brief, r.data ) )
         if r.result in TASK_OKAY_RESULTS:
+            if 'changed' in r.data:
+                if r.data['changed']:
+                    report.append( ( brief, r.data ) )
             if options.verbose:
                 report.append( ( brief, r.data ) )
     if not report:
