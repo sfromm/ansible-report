@@ -41,8 +41,8 @@ class CallbackModule(object):
         username = os.getlogin()
         euid = pwd.getpwuid(os.getuid())[0]
         query = session.query(AnsibleUser).\
-                filter(AnsibleUser.username==username).\
-                filter(AnsibleUser.euid==euid)
+            filter(AnsibleUser.username == username).\
+            filter(AnsibleUser.euid == euid)
         users = query.all()
         if not users:
             user = AnsibleUser(username, euid)
