@@ -1,2 +1,8 @@
-*.pyc
+# build / distutils
+*.py[co]
 *.*.swp
+build
+# rpm
+MANIFEST
+dist
+rpm-build
