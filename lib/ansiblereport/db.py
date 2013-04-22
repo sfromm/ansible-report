@@ -30,7 +30,8 @@ def init_db_conn():
     config = C.load_config_file()
     uri = C.get_config(config, 'ansiblereport', 'uri', None, 'sqlite://')
     engine = create_engine(uri, echo=False)
-    session = Session(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
     Base.metadata.create_all(engine)
     return session
 
