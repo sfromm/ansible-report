@@ -98,7 +98,7 @@ def main(args):
     parser.add_option('-v', '--verbose', action='store_true', default=False,
                       help="Be verbose")
     options, args = parser.parse_args()
-    session = init_db_conn()
+    session = init_db_session()
     report(options, session)
 
 if __name__ == '__main__':

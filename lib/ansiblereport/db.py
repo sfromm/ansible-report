@@ -26,7 +26,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 import ansible.constants as C
 
-def init_db_conn():
+def init_db_session():
     config = C.load_config_file()
     uri = C.get_config(config, 'ansiblereport', 'uri', None, 'sqlite://')
     engine = create_engine(uri, echo=False)
