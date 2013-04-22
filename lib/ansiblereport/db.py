@@ -28,7 +28,8 @@ import ansible.constants as C
 
 def init_db_session():
     config = C.load_config_file()
-    uri = C.get_config(config, 'ansiblereport', 'uri', None, 'sqlite://')
+    uri = C.get_config(config, 'ansiblereport',
+                       'sqlalchemy.url', None, 'sqlite://')
     engine = create_engine(uri, echo=False)
     Session = sessionmaker(bind=engine)
     session = Session()
