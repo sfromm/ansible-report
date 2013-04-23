@@ -1,9 +1,16 @@
 ansible-report
 ==============
 
-Utility to log and report ansible activity
+Utility to log and report Ansible activity
 
-For information on *ansible*, see http://ansible.cc.
+For information on *Ansible*, see http://ansible.cc.
+
+Requirements
+============
+
+* [Ansible](http://ansible.cc)
+* [SQLAlchemy](http://www.sqlalchemy.org/)
+* [Alembic](https://pypi.python.org/pypi/alembic)
 
 Callback Configuration
 ======================
