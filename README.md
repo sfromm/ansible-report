@@ -3,16 +3,40 @@ ansible-report
 
 Utility to log and report ansible activity
 
-At this time, the database schema is not finalized.  While I will
-attempt to provide a mechanism to keep up with schema changes, I make no
-guarantees at this time.
+For information on *ansible*, see http://ansible.cc.
 
-To configure the callback, configure something like the following in
-your ansible.cfg:
+Callback Configuration
+======================
+
+To configure the callback plugin, place the file
+_ansiblereport-logger.py_ in the directory where you have *ansible*
+configured to look for callback plugins.  The default location for this
+is typically:
+
+    /usr/share/ansible_plugins/callback_plugins
+
+Alternatively, you can configure this directory via your _ansible.cfg_.
+After copying there, you need to configure the sqlalchemy url that will
+be used.  The following is an example that uses a *sqlite* file in the
+current directory:
 
     [ansiblereport]
-    uri = sqlite:///ansbile.sqlite
+    sqlalchemy.url = sqlite:///ansbile.sqlite
 
-This will create a sqlite db in your current working directory.  For
-information on specifying a uri for sqlalchemy, please see the
-appropriate documentation.
+For information on configuring sqlaclhemy, one starting point is
+[SQLAlchemy Engines](http://docs.sqlalchemy.org/en/latest/core/engines.html).  More information is available at http://docs.sqlalchemy.org/en/latest/.
+
+Schema Migrations
+=================
+
+At this time, the database schema is not finalized.  While I will
+endeavor to provide a mechanism to keep up with schema changes, I make no
+guarantees at this time.  Migrations will be handled with
+[alembic](http://alembic.readthedocs.org/en/latest/index.html).  Please
+refer to _alembic_ documentation for how to handle migrations.  In the
+simple case, you should be able to do:
+
+    $ alembic upgrade head
+
+In order to configure alembic, you should update the _sqlalchemy.url_
+key in _alembic.ini_.
