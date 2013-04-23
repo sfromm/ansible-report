@@ -102,6 +102,7 @@ class AnsiblePlaybook(Base):
     connection = Column(String)
     starttime = Column(DateTime, default=now())
     endtime = Column(DateTime, default=now())
+    checksum = Column(String)
 
     def __init__(self, uuid):
         self.uuid = uuid
