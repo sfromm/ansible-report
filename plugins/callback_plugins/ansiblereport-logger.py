@@ -22,6 +22,7 @@ import uuid
 import socket
 from ansible.constants import *
 from ansiblereport.db import *
+from ansiblereport.utils import *
 from sqlalchemy import *
 from sqlalchemy.orm import *
 
@@ -34,12 +35,20 @@ class CallbackModule(object):
 
     def __init__(self):
         self.uuid = uuid.uuid1()
+        self.starttime = 0
+        self.endtime = 0
+        self.playbook = None
 
-    def _log_result(self, task):
-        ''' add result to database '''
-        session.add(task)
-        username = os.getlogin()
-        euid = pwd.getpwuid(os.getuid())[0]
+    def _get_user(self):
+        try:
+            username = os.getlogin()
+            euid = pwd.getpwuid(os.getuid())[0]
+            return (username, euid)
+        except Exception, e:
+            return (None, None)
+
+    def _get_ansible_user(self):
+        (username, euid) = self._get_user()
         query = session.query(AnsibleUser).\
             filter(AnsibleUser.username == username).\
             filter(AnsibleUser.euid == euid)
@@ -50,7 +59,20 @@ class CallbackModule(object):
             session.commit()
         else:
             user = users[0]
+        return user
+
+    def _log_task(self, task):
+        ''' add result to database '''
+        session.add(task)
+        user = self._get_ansible_user()
         task.user_id = user.id
+        session.commit()
+
+    def _log_play(self, play):
+        session.add(play)
+        if play.user_id is None:
+            user = self._get_ansible_user()
+            play.user_id = user.id
         session.commit()
 
     def on_any(self, *args, **kwargs):
@@ -58,26 +80,26 @@ class CallbackModule(object):
 
     def runner_on_failed(self, host, res, ignore_errors=False):
         module = res['invocation']['module_name']
-        self._log_result(AnsibleTask(host, module, 'FAILED', res))
+        self._log_task(AnsibleTask(host, module, 'FAILED', res))
 
     def runner_on_ok(self, host, res):
         module = res['invocation']['module_name']
-        self._log_result(AnsibleTask(host, module, 'OK', res))
+        self._log_task(AnsibleTask(host, module, 'OK', res))
 
     def runner_on_error(self, host, msg):
         res = {}
-        self._log_result(AnsibleTask(host, None, 'ERROR', res))
+        self._log_task(AnsibleTask(host, None, 'ERROR', res))
 
     def runner_on_skipped(self, host, item=None):
         res = {}
-        self._log_result(AnsibleTask(host, None, 'SKIPPED', res))
+        self._log_task(AnsibleTask(host, None, 'SKIPPED', res))
 
     def runner_on_unreachable(self, host, res):
         if not isinstance(res, dict):
             res2 = res
             res = {}
             res['msg'] = res2
-        self._log_result(AnsibleTask(host, None, 'UNREACHABLE', res))
+        self._log_task(AnsibleTask(host, None, 'UNREACHABLE', res))
 
     def runner_on_no_hosts(self):
         pass
@@ -89,10 +111,12 @@ class CallbackModule(object):
         pass
 
     def runner_on_async_failed(self, host, res, jid):
-        self._log_result(AnsibleTask(host, None, 'ASYNC_FAILED', res))
+        self._log_task(AnsibleTask(host, None, 'ASYNC_FAILED', res))
 
     def playbook_on_start(self):
-        pass
+        # start of playbook, no attrs are set yet
+        self.starttime = datetime.datetime.now()
+        self.playbook = AnsiblePlaybook(str(self.uuid))
 
     def playbook_on_notify(self, host, handler):
         pass
@@ -119,7 +143,16 @@ class CallbackModule(object):
         pass
 
     def playbook_on_play_start(self, pattern):
-        pass
+        play = getattr(self, 'play', None)
+        if play is not None:
+            path = os.path.abspath(os.path.join(
+                play.playbook.basedir, play.playbook.filename))
+            self.playbook.path = path
+            self.playbook.checksum = git_version(path)
+            self.playbook.connection = play.playbook.transport
+        self._log_play(self.playbook)
 
     def playbook_on_stats(self, stats):
-        pass
+        self.endtime = datetime.datetime.now()
+        self.playbook.endtime = self.endtime
+        self._log_play(self.playbook)
