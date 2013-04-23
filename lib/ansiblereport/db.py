@@ -82,7 +82,8 @@ class AnsibleUser(Base):
     username = Column(String)
     euid = Column(Integer)
 
-    tasks = relationship("AnsibleTask", backref='task')
+    tasks = relation("AnsibleTask", backref='task')
+    playbooks = relation("AnsiblePlaybook", backref='playbook')
 
     def __init__(self, user, euid):
         self.username = user
@@ -91,17 +92,19 @@ class AnsibleUser(Base):
     def __repr__(self):
         return "<AnsibleUser<'%s (effective %s)'>" % (self.username, self.euid)
 
-#class AnsiblePlaybook(Base):
-#    __tablename__ = 'playbook'
+class AnsiblePlaybook(Base):
+    __tablename__ = 'playbook'
 
-#    id = Column(Integer, primary_key=True)
-#    name = Column(String)
-#    uuid = Column(String)
-#    user_id = Column(Integer, ForeignKey('user.id'))
+    id = Column(Integer, primary_key=True)
+    path = Column(String)
+    uuid = Column(String)
+    user_id = Column(Integer, ForeignKey('user.id'))
+    connection = Column(String)
+    starttime = Column(DateTime, default=now())
+    endtime = Column(DateTime, default=now())
 
-#    def __init__(self, name, uuid):
-#        self.name = name
-#        self.uuid = uuid
+    def __init__(self, uuid):
+        self.uuid = uuid
 
-#    def __repr__(self):
-#        return "<AnsiblePlaybook<'%s', '%s'>" % (self.name, self.uuid)
+    def __repr__(self):
+        return "<AnsiblePlaybook<'%s', '%s'>" % (self.path, self.uuid)
