@@ -49,6 +49,9 @@ class JSONEncodedDict(TypeDecorator):
             value = json.loads(value)
         return value
 
+    def __repr__(self):
+        return "JSONEncodedDict(%s)" % self.value
+
 def now():
     return datetime.datetime.now()
 
@@ -64,6 +67,7 @@ class AnsibleTask(Base):
     result = Column(String)
     data = Column(JSONEncodedDict)
     user_id = Column(Integer, ForeignKey('user.id'))
+    playbook_id = Column(Integer, ForeignKey('playbook.id'))
 
     def __init__(self, hostname, module, result, data, timestamp=now()):
         self.hostname = hostname
@@ -82,8 +86,8 @@ class AnsibleUser(Base):
     username = Column(String)
     euid = Column(Integer)
 
-    tasks = relation("AnsibleTask", backref='task')
-    playbooks = relation("AnsiblePlaybook", backref='playbook')
+    tasks = relation("AnsibleTask", backref='user')
+    playbooks = relation("AnsiblePlaybook", backref='user')
 
     def __init__(self, user, euid):
         self.username = user
@@ -103,6 +107,8 @@ class AnsiblePlaybook(Base):
     starttime = Column(DateTime, default=now())
     endtime = Column(DateTime, default=now())
     checksum = Column(String)
+
+    tasks = relation("AnsibleTask", backref='playbook')
 
     def __init__(self, uuid):
         self.uuid = uuid
