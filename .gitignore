@@ -2,6 +2,7 @@
 *.py[co]
 *.*.swp
 build
+alembic.ini
 # rpm
 MANIFEST
 dist
