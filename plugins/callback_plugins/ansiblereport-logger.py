@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+__requires__ = ['SQLAlchemy >= 0.7']
+import pkg_resources
+
 import os
 import pwd
 import uuid
@@ -23,8 +26,6 @@ import socket
 from ansible.constants import *
 from ansiblereport.db import *
 from ansiblereport.utils import *
-from sqlalchemy import *
-from sqlalchemy.orm import *
 
 session = init_db_session()
 
@@ -66,6 +67,8 @@ class CallbackModule(object):
         session.add(task)
         user = self._get_ansible_user()
         task.user_id = user.id
+        if self.playbook:
+            task.playbook_id = self.playbook.id
         session.commit()
 
     def _log_play(self, play):
