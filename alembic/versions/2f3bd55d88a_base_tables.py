@@ -10,6 +10,7 @@ Create Date: 2013-04-22 15:26:47.296443
 revision = '2f3bd55d88a'
 down_revision = None
 
+from ansiblereport.db import JSONEncodedDict
 from alembic import op
 import sqlalchemy as sa
 
@@ -28,7 +29,7 @@ def upgrade():
     sa.Column('hostname', sa.String(), nullable=True),
     sa.Column('module', sa.String(), nullable=True),
     sa.Column('result', sa.String(), nullable=True),
-    sa.Column('data', sa.JSONEncodedDict(), nullable=True),
+    sa.Column('data', JSONEncodedDict(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
