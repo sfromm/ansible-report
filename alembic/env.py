@@ -16,7 +16,9 @@ fileConfig(config.config_file_name)
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
+from sqlalchemy.types import UserDefinedType
 from ansiblereport.db import Base
+from ansiblereport.db import JSONEncodedDict
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
