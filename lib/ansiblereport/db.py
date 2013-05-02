@@ -19,16 +19,18 @@
 import json
 import datetime
 
+import ansiblereport.constants as C
+
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from sqlalchemy.types import TypeDecorator, Text
 from sqlalchemy.ext.declarative import declarative_base
 
-import ansible.constants as C
+import ansible.constants
 
 def init_db_session():
-    config = C.load_config_file()
-    uri = C.get_config(config, 'ansiblereport',
+    config = ansible.constants.load_config_file()
+    uri = ansible.constants.get_config(config, 'ansiblereport',
                        'sqlalchemy.url', None, 'sqlite://')
     engine = create_engine(uri, echo=False)
     Session = sessionmaker(bind=engine)
@@ -115,3 +117,31 @@ class AnsiblePlaybook(Base):
 
     def __repr__(self):
         return "<AnsiblePlaybook<'%s', '%s'>" % (self.path, self.uuid)
+
+    @classmethod
+    def by_id(cls, session, identifier):
+        return session.query(cls).get(identifier)
+
+    @classmethod
+    def get_last_n_playbooks(cls, session, clauses=None, limit=1):
+        if clauses is None:
+            clauses = []
+        if limit == 0:
+            limit = None
+        return session.query(cls).filter(
+                or_(*clauses)
+                ).order_by(cls.endtime.desc()).limit(limit)
+
+    @classmethod
+    def get_playbook_stats(cls, playbook):
+        results = {}
+        for task in playbook.tasks:
+            if task.hostname not in results:
+                results[task.hostname] = {}
+                for key in C.DEFAULT_TASK_RESULTS:
+                    results[task.hostname][key.lower()] = 0
+                    results[task.hostname]['changed'] = 0
+            if 'changed' in task.data and bool(task.data['changed']):
+                results[task.hostname]['changed'] += 1
+            results[task.hostname][task.result.lower()] += 1
+        return results
