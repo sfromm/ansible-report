@@ -17,11 +17,22 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import smtplib
 import subprocess
 import traceback
 import logging
 
+import ansiblereport.constants as C
+
+import ansible.constants as AC
+
+try:
+    from email.mime.text import MIMEText
+except ImportError:
+    from email.MIMEText import MIMEText
+
 def run_command(args, cwd=None):
+    ''' run a command via subprocess '''
     if isinstance(args, list):
         shell = False
     else:
@@ -44,6 +55,7 @@ def run_command(args, cwd=None):
     return (rc, out, err)
 
 def git_version(path):
+    ''' get git HEAD version for a repo '''
     version = 'NA'
     path_dir = os.path.dirname(path)
     (rc, out, err) = run_command(['git', 'rev-parse', '--git-dir'], cwd=path_dir)
@@ -59,3 +71,81 @@ def git_version(path):
         version = f.readline()[:10]
         f.close()
     return version
+
+def format_task_brief(task):
+    ''' summarize a task into a brief string '''
+    return "{0} {1} {2}: {3}".format(
+            task.timestamp.strftime(C.DEFAULT_SHORT_STRFTIME),
+            task.hostname,
+            task.module, task.result)
+
+def format_playbook_report(data):
+    ''' take list of data and return formatted string '''
+    report = ''
+    report += '{0:=^50}\n\n'.format(' Playbooks ')
+    for pb in data:
+        report += "%s: \n" % pb['playbook'].path
+        report += "  {0:>10}: {1} ({2})\n".format('User',
+                pb['playbook'].user.username, pb['playbook'].user.euid)
+        report += "  {0:>10}: {1}\n".format('Start time',
+                pb['playbook'].starttime.strftime(C.DEFAULT_STRFTIME))
+        report += "  {0:>10}: {1}\n".format('End time',
+                pb['playbook'].endtime.strftime(C.DEFAULT_STRFTIME))
+        report += '\n  {0:-^25}\n\n'.format(' Tasks ')
+        for task in pb['tasks']:
+            report += "  {0}\n".format(task[0])
+
+        report += '\n  {0:-^25}\n\n'.format(' Summary ')
+        for host, stats in pb['stats'].items():
+            summary = ''
+            if 'ok' in stats:
+                summary += "{0}={1}  ".format('ok', stats['ok'])
+            for stat in sorted(stats.keys()):
+                if stat == 'ok':
+                    continue
+                summary += "{0}={1}  ".format(stat.lower(), stats[stat])
+            report += "  {0}\t: {1}\n".format(host, summary)
+            report += "\n\n\n"
+    return report
+
+def email_report(report_data, smtp_subject=None, smtp_recipient=None):
+    ''' pull together all the necessary details and send email report '''
+    smtp_server = get_smtp_server()
+    smtp_sender = get_smtp_sender()
+    if smtp_subject is None:
+        smtp_subject = get_smtp_subject()
+    if smtp_recipient is None:
+        smtp_recipient = get_smtp_recipient()
+    msg = MIMEText(report_data)
+    msg['Subject'] = smtp_subject
+    msg['From'] = smtp_sender
+    msg['To'] = smtp_recipient
+    try:
+        s = smtplib.SMTP(smtp_server)
+        s.sendmail(smtp_sender, [smtp_recipient], msg.as_string())
+        s.quit()
+    except Exception, e:
+        print 'failed to send email report: {0}'.format(str(e))
+        return False
+    return True
+
+def get_config_value(key, default):
+    ''' look up key in ansible.cfg '''
+    config = AC.load_config_file()
+    return AC.get_config(config, 'ansiblereport', key, None, default)
+
+def get_smtp_server():
+    ''' look up smtp_server in ansible.cfg '''
+    return get_config_value('smtp.server', C.DEFAULT_SMTP_SERVER)
+
+def get_smtp_subject():
+    ''' look up smtp_subject in ansible.cfg '''
+    return get_config_value('smtp.subject', C.DEFAULT_SMTP_SUBJECT)
+
+def get_smtp_sender():
+    ''' look up smtp_sender in ansible.cfg '''
+    return get_config_value('smtp.sender', C.DEFAULT_SMTP_SENDER)
+
+def get_smtp_recipient():
+    ''' look up smtp_recipient in ansible.cfg '''
+    return get_config_value('smtp.recipient', C.DEFAULT_SMTP_RECIPIENT)
