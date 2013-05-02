@@ -18,21 +18,52 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA.
 
+__requires__ = ['SQLAlchemy >= 0.7']
+import pkg_resources
+
 import os
 import json
 import sys
 import json
 import smtplib
-from email.mime.text import MIMEText
 from optparse import OptionParser
 
 import ansiblereport
+import ansiblereport.constants as C
 from ansiblereport.db import *
+from ansiblereport.utils import *
 
-DEFAULT_STRFTIME = '%Y-%m-%d %H:%M:%S'
-DEFAULT_LIMIT = 2
-TASK_WARN_RESULTS = ['FAILED', 'ERROR', 'UNREACHABLE']
-TASK_OKAY_RESULTS = ['OK', 'SKIPPED']
+DEFAULT_LIMIT = 0
+
+def get_report_task(options, task):
+    brief = format_task_brief(task)
+    if task.result in C.DEFAULT_TASK_WARN_RESULTS:
+        return (brief, task.data)
+    if task.result in C.DEFAULT_TASK_OKAY_RESULTS:
+        if 'changed' in task.data and bool(task.data['changed']):
+            return (brief, task.data)
+        if options.verbose:
+            return (brief, task.data)
+    return None
+
+def report_playbooks(options, session, clauses):
+    ''' report on playbook information '''
+    playbooks = []
+    results = AnsiblePlaybook.get_last_n_playbooks(session,
+            limit=options.limit, clauses=clauses)
+    for playbook in results:
+        tasks = []
+        for task in playbook.tasks:
+            t = get_report_task(options, task)
+            if t is not None:
+                tasks.append(t)
+        if len(tasks) > 0:
+            pb = {}
+            pb['tasks'] = tasks
+            pb['playbook'] = playbook
+            pb['stats'] = AnsiblePlaybook.get_playbook_stats(playbook)
+            playbooks.append(pb)
+    return playbooks
 
 def report(options, session):
     ''' select information from db for reporting on '''
@@ -44,31 +75,14 @@ def report(options, session):
     if options.module_name:
         for n in options.module_name:
             clauses.append(AnsibleTask.module == n)
-    results = session.query(AnsibleTask).\
-              filter(or_(*clauses)).\
-              order_by(AnsibleTask.timestamp.desc()).\
-              limit(options.limit)
-    for r in results:
-        brief = "%s %s %s: %s" % (r.timestamp.strftime(DEFAULT_STRFTIME),
-                                  r.hostname, r.module, r.result)
-        if r.result in TASK_WARN_RESULTS:
-            report.append( ( brief, r.data ) )
-        if r.result in TASK_OKAY_RESULTS:
-            if 'changed' in r.data:
-                if r.data['changed']:
-                    report.append( ( brief, r.data ) )
-            if options.verbose:
-                report.append( ( brief, r.data ) )
-    if not report:
+    playbooks = report_playbooks(options, session, clauses)
+    if not playbooks:
         return None
+    report_playbook = format_playbook_report(playbooks)
     if options.screen:
-        print "---\nTasks\n\n"
-        for task in report:
-            print task[0]
-            print json.dumps(task[1], sort_keys=True, indent=4)
+        print report_playbook
     if options.email:
-        # TODO
-        pass
+        email_report(report_playbook)
     return None
 
 def version(prog):
@@ -87,6 +101,8 @@ def main(args):
     parser.add_option('-l', '--limit', metavar='LIMIT',
                       default=DEFAULT_LIMIT,
                       help="limit reported events to N")
+#    parser.add_option('--age', metavar='AGE',
+#                      help='Restrict report to events no older than this')
     parser.add_option('--email', action='store_true',
                       default=False,
                       help="Send email report to configured destination")
