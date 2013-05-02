@@ -34,7 +34,6 @@ Here is an example output:
       gandalf.example.net   : ok=3  changed=1  error=0  failed=0  skipped=0  unreachable=0  
 
 
-
 Callback Configuration
 ======================
 
@@ -55,6 +54,21 @@ current directory:
 
 For information on configuring sqlaclhemy, one starting point is
 [SQLAlchemy Engines](http://docs.sqlalchemy.org/en/latest/core/engines.html).  More information is available at http://docs.sqlalchemy.org/en/latest/.
+
+Report Configuration
+====================
+
+The only configuration related to reporting is the necessary SMTP
+settings.  These are:
+
+    [ansiblereport]
+    smtp.server = localhost
+    smtp.subject = ansible-report
+    smtp.sender = nobody@example.net
+    smtp.recipient = root@example.net
+
+The _smtp.server_ setting is what *ansible-report* will connect to when
+sending an email report to the configured recipients.
 
 Schema Migrations
 =================
