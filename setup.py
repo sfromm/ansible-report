@@ -6,7 +6,7 @@ import sys
 from ansiblereport import __version__, __author__, __name__
 from distutils.core import setup
 
-PLUGIN_PATH = 'share/ansible_plugins/'
+PLUGIN_PATH = 'share/ansible_plugins/callback_plugins'
 
 setup(name=__name__,
       version=__version__,
