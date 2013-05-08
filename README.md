@@ -8,7 +8,7 @@ For information on *Ansible*, see http://ansible.cc.
 Requirements
 ============
 
-* [Ansible](http://ansible.cc)
+* [Ansible](http://ansible.cc) >= 1.2
 * [SQLAlchemy](http://www.sqlalchemy.org/)
 * [Alembic](https://pypi.python.org/pypi/alembic)
 
