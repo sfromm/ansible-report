@@ -3,12 +3,32 @@ PYTHON=python
 
 VERSION := $(shell grep __version lib/ansiblereport/__init__.py | sed -e 's|^.*= ||' -e "s|'||g" )
 
+# Get the branch information from git
+ifneq ($(shell which git),)
+GIT_DATE := $(shell git log -n 1 --format="%ai")
+endif
+
+ifeq ($(OS), FreeBSD)
+DATE := $(shell date -j -f "%Y-%m-%d %H:%M:%s"  "$(GIT_DATE)" +%Y%m%d%H%M)
+else
+ifeq ($(OS), Darwin)
+DATE := $(shell date -j -f "%Y-%m-%d %H:%M:%S"  "$(GIT_DATE)" +%Y%m%d%H%M)
+else
+DATE := $(shell date --utc --date="$(GIT_DATE)" +%Y%m%d%H%M)
+endif
+endif
+
+
 # RPM build parameters
 RPMSPECDIR = packaging/rpm
 RPMSPEC = $(RPMSPECDIR)/ansiblereport.spec
 RPMDIST = $(shell rpm --eval '%dist')
 RPMRELEASE = 1
+ifeq ($(OFFICIAL),)
+RPMRELEASE = 0.git$(DATE)
+endif
 RPMNVR = "$(NAME)-$(VERSION)-$(RPMRELEASE)$(RPMDIST)"
+
 
 all: clean python
 
