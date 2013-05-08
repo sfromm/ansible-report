@@ -21,6 +21,8 @@ import smtplib
 import subprocess
 import traceback
 import logging
+import dateutil.parser
+import datetime
 
 import ansiblereport.constants as C
 
@@ -72,12 +74,19 @@ def git_version(path):
         f.close()
     return version
 
-def format_task_brief(task):
+def format_task_brief(task, embedded=True):
     ''' summarize a task into a brief string '''
-    return "{0} {1} {2}: {3}".format(
-            task.timestamp.strftime(C.DEFAULT_SHORT_STRFTIME),
-            task.hostname,
-            task.module, task.result)
+    strftime = C.DEFAULT_SHORT_STRFTIME
+    if not embedded:
+        strftime = C.DEFAULT_STRFTIME
+    if task.module is None:
+        return "{0} {1}: {2}".format(
+                task.timestamp.strftime(strftime),
+                task.hostname, task.result)
+    else:
+        return "{0} {1} {2}: {3}".format(
+                task.timestamp.strftime(strftime),
+                task.hostname, task.module, task.result)
 
 def format_playbook_report(data):
     ''' take list of data and return formatted string '''
@@ -91,9 +100,9 @@ def format_playbook_report(data):
                 pb['playbook'].starttime.strftime(C.DEFAULT_STRFTIME))
         report += "  {0:>10}: {1}\n".format('End time',
                 pb['playbook'].endtime.strftime(C.DEFAULT_STRFTIME))
-        report += '\n  {0:-^25}\n\n'.format(' Tasks ')
-        for task in pb['tasks']:
-            report += "  {0}\n".format(task[0])
+
+        if 'tasks' in pb:
+            report += format_task_report(pb['tasks'])
 
         report += '\n  {0:-^25}\n\n'.format(' Summary ')
         for host, stats in pb['stats'].items():
@@ -104,8 +113,48 @@ def format_playbook_report(data):
                 if stat == 'ok':
                     continue
                 summary += "{0}={1}  ".format(stat.lower(), stats[stat])
-            report += "  {0}\t: {1}\n".format(host, summary)
-            report += "\n\n\n"
+            report += "  {0:<20}: {1}\n".format(host, summary)
+        report += "\n\n\n"
+    return report
+
+def format_task_report(tasks, embedded=True):
+    report = ''
+    if len(tasks) < 1:
+        return report
+    report += '\n  {0:-^25}\n\n'.format(' Tasks ')
+    for task in tasks:
+        args = []
+        report += "  {0}\n".format(task[0])
+        if 'invocation' not in task[1]:
+            report += '\n'
+            continue
+        invocation = task[1]['invocation']
+        module_name = task[1]['invocation']['module_name']
+        if module_name == 'setup':
+            report += '\n'
+            continue
+        if 'changed' in task[1] and bool(task[1]['changed']):
+            if 'module_name' == 'setup':
+                continue
+            report += "    {0:>10}: {1}\n".format('Changed', 'yes')
+
+        if module_name == 'git':
+            args.append(('SHA1', task[1]['after']))
+        elif module_name == 'copy' or module_name == 'file':
+            if 'path' in task[1]:
+                args.append(('Path', task[1]['path']))
+            elif 'dest' in task[1]:
+                args.append(('Path', task[1]['dest']))
+        if invocation['module_args']:
+            args.append(('Arguments', invocation['module_args']))
+        if 'msg' in task[1] and task[1]['msg']:
+            args.append(('Message', task[1]['msg']))
+        elif 'result' in task[1] and task[1]['result']:
+            results = '\n'.join(task[1]['result'])
+            args.append(('Result', results))
+        for arg in args:
+            report += "    {0:>10}: {1}\n".format(arg[0], arg[1])
+        report += '\n'
     return report
 
 def email_report(report_data, smtp_subject=None, smtp_recipient=None):
@@ -149,3 +198,31 @@ def get_smtp_sender():
 def get_smtp_recipient():
     ''' look up smtp_recipient in ansible.cfg '''
     return get_config_value('smtp.recipient', C.DEFAULT_SMTP_RECIPIENT)
+
+def parse_datetime_string(arg):
+    ''' take string argument and convert to datetime object '''
+    try:
+        date = dateutil.parser.parse(arg, default=True)
+    except ValueError:
+        parts = arg.split()
+        if len(parts) != 3 and parts[2] != 'ago':
+            return None
+        try:
+            interval = int(parts[0])
+        except ValueError:
+            return None
+        period = parts[1]
+        if 'second' in period:
+            delta = datetime.timedelta(seconds=interval)
+        elif 'minute' in period:
+            delta = datetime.timedelta(minutes=interval)
+        elif 'hour' in period:
+            delta = datetime.timedelta(hours=interval)
+        elif 'day' in period:
+            delta = datetime.timedelta(days=interval)
+        elif 'week' in period:
+            delta = datetime.timedelta(weeks=interval)
+        date = datetime.datetime.now() - delta
+    except:
+        return None
+    return date
