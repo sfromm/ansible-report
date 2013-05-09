@@ -35,8 +35,8 @@ from ansiblereport.utils import *
 
 DEFAULT_LIMIT = 0
 
-def get_report_task(options, task):
-    brief = format_task_brief(task)
+def get_report_task(options, task, embedded=True):
+    brief = format_task_brief(task, embedded)
     if task.result in C.DEFAULT_TASK_WARN_RESULTS:
         return (brief, task.data)
     if task.result in C.DEFAULT_TASK_OKAY_RESULTS:
@@ -46,9 +46,29 @@ def get_report_task(options, task):
             return (brief, task.data)
     return None
 
+def report_tasks(options, session, clauses):
+    ''' report on specific tasks '''
+    tasks = []
+    if options.age:
+        age = parse_datetime_string(options.age)
+        if age:
+            clauses.append(AnsibleTask.timestamp < age)
+    results = AnsibleTask.find_tasks(session,
+            limit=options.limit, clauses=clauses)
+    for task in results:
+        t = get_report_task(options, task, embedded=False)
+        if t is not None:
+            tasks.append(t)
+    return tasks
+
 def report_playbooks(options, session, clauses):
     ''' report on playbook information '''
     playbooks = []
+    if options.age:
+        age = parse_datetime_string(options.age)
+        print age
+        if age:
+            clauses.append(AnsiblePlaybook.starttime > age)
     results = AnsiblePlaybook.get_last_n_playbooks(session,
             limit=options.limit, clauses=clauses)
     for playbook in results:
@@ -69,20 +89,30 @@ def report(options, session):
     ''' select information from db for reporting on '''
     clauses = []
     report = []
+    report_data = ''
     if options.hostname:
         for n in options.hostname:
             clauses.append(AnsibleTask.hostname == n)
     if options.module_name:
         for n in options.module_name:
             clauses.append(AnsibleTask.module == n)
-    playbooks = report_playbooks(options, session, clauses)
-    if not playbooks:
-        return None
-    report_playbook = format_playbook_report(playbooks)
-    if options.screen:
-        print report_playbook
-    if options.email:
-        email_report(report_playbook)
+    if options.result:
+        for n in options.result:
+            clauses.append(AnsibleTask.result == n)
+    # For now, if clauses are provided, search tasks.
+    if clauses:
+        tasks = report_tasks(options, session, clauses)
+        report_data = format_task_report(tasks)
+    else:
+        playbooks = report_playbooks(options, session, clauses)
+        if not playbooks:
+            return None
+        report_data = format_playbook_report(playbooks)
+    if report_data:
+        if options.screen:
+            print report_data
+        if options.email:
+            email_report(report_data)
     return None
 
 def version(prog):
@@ -98,11 +128,14 @@ def main(args):
     parser.add_option('-n', '--hostname', dest='hostname',
                       action='append',
                       help="hostname(s) to restrict report to")
+    parser.add_option('-r', '--result', 
+                      action='append',
+                      help="results to restrict report to")
     parser.add_option('-l', '--limit', metavar='LIMIT',
                       default=DEFAULT_LIMIT,
                       help="limit reported events to N")
-#    parser.add_option('--age', metavar='AGE',
-#                      help='Restrict report to events no older than this')
+    parser.add_option('--age', metavar='AGE',
+                      help='Restrict report to events no older than this')
     parser.add_option('--email', action='store_true',
                       default=False,
                       help="Send email report to configured destination")
