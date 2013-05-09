@@ -81,6 +81,16 @@ class AnsibleTask(Base):
     def __repr__(self):
         return "<AnsibleTask<'%s', '%s', '%s'>" % (self.hostname, self.module, self.result)
 
+    @classmethod
+    def find_tasks(cls, session, clauses=None, limit=1):
+        if clauses is None:
+            clauses = []
+        if limit == 0:
+            limit = None
+        return session.query(cls).filter(
+                and_(*clauses)
+                ).order_by(cls.timestamp.desc()).limit(limit)
+
 class AnsibleUser(Base):
     __tablename__ = 'user'
 
