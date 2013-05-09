@@ -24,7 +24,7 @@ import pwd
 import uuid
 import socket
 from ansible.constants import *
-from ansiblereport.db import *
+from ansiblereport.model import *
 from ansiblereport.utils import *
 
 session = init_db_session()

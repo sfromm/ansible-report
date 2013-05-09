@@ -10,7 +10,7 @@ Create Date: 2013-04-22 15:26:47.296443
 revision = '2f3bd55d88a'
 down_revision = None
 
-from ansiblereport.db import JSONEncodedDict
+from ansiblereport.model import JSONEncodedDict
 from alembic import op
 import sqlalchemy as sa
 

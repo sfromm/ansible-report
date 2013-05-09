@@ -31,7 +31,7 @@ from optparse import OptionGroup
 
 import ansiblereport
 import ansiblereport.constants as C
-from ansiblereport.db import *
+from ansiblereport.model import *
 from ansiblereport.utils import *
 
 DEFAULT_LIMIT = 0
