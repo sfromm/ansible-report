@@ -11,6 +11,7 @@ Requirements
 * [Ansible](http://ansible.cc) >= 1.2
 * [SQLAlchemy](http://www.sqlalchemy.org/)
 * [Alembic](https://pypi.python.org/pypi/alembic)
+* [python-dateutil](http://labix.org/python-dateutil)
 
 Example Output
 ==============
