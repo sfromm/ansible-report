@@ -14,7 +14,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# along with ansible-report.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
 import datetime
@@ -70,6 +70,12 @@ class AnsibleTask(Base):
     data = Column(JSONEncodedDict)
     user_id = Column(Integer, ForeignKey('user.id'))
     playbook_id = Column(Integer, ForeignKey('playbook.id'))
+    __table_args__ = (
+            Index('task_timestamp_idx', 'timestamp'),
+            Index('task_hostname_idx', 'hostname'),
+            Index('task_module_idx', 'module'),
+            Index('task_result_idx', 'result')
+            )
 
     def __init__(self, hostname, module, result, data, timestamp=now()):
         self.hostname = hostname
@@ -97,6 +103,9 @@ class AnsibleUser(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String)
     euid = Column(Integer)
+    __table_args__ = (
+            Index('user_username_idx', 'username'),
+            )
 
     tasks = relation("AnsibleTask", backref='user')
     playbooks = relation("AnsiblePlaybook", backref='user')
@@ -119,6 +128,12 @@ class AnsiblePlaybook(Base):
     starttime = Column(DateTime, default=now())
     endtime = Column(DateTime, default=now())
     checksum = Column(String)
+    __table_args__ = (
+            Index('playbook_path_idx', 'path'),
+            Index('playbook_uuid_idx', 'uuid'),
+            Index('playbook_connection_idx', 'connection'),
+            Index('playbook_starttime_idx', 'starttime')
+            )
 
     tasks = relation("AnsibleTask", backref='playbook')
 
