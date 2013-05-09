@@ -52,7 +52,7 @@ def report_tasks(options, session, clauses):
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
-            clauses.append(AnsibleTask.timestamp < age)
+            clauses.append(AnsibleTask.timestamp > age)
     results = AnsibleTask.find_tasks(session,
             limit=options.limit, clauses=clauses)
     for task in results:
@@ -66,7 +66,6 @@ def report_playbooks(options, session, clauses):
     playbooks = []
     if options.age:
         age = parse_datetime_string(options.age)
-        print age
         if age:
             clauses.append(AnsiblePlaybook.starttime > age)
     results = AnsiblePlaybook.get_last_n_playbooks(session,
