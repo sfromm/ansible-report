@@ -35,3 +35,6 @@ DEFAULT_SMTP_SUBJECT = 'ansible-report: {0}'.format(
         datetime.datetime.now().strftime(DEFAULT_FRIENDLY_STRFTIME))
 DEFAULT_SMTP_SENDER = 'nobody@{0}'.format(socket.getfqdn())
 DEFAULT_SMTP_RECIPIENT = 'root@{0}'.format(socket.getfqdn())
+
+DEFAULT_OUTPUT = ['screen']
+DEFAULT_OUTPUTS_AVAIL = ['screen', 'email']
