@@ -28,14 +28,22 @@ from sqlalchemy.ext.declarative import declarative_base
 
 import ansible.constants
 
-def init_db_session():
+def init_db_session(alembic_ini=None, debug=False):
     config = ansible.constants.load_config_file()
     uri = ansible.constants.get_config(config, 'ansiblereport',
-                       'sqlalchemy.url', None, 'sqlite://')
-    engine = create_engine(uri, echo=False)
+            'sqlalchemy.url', None, 'sqlite://')
+    engine = create_engine(uri, echo=debug)
+    Base.metadata.create_all(engine)
+
+    if alembic_ini is not None:
+        # if we have an alembic.ini, stamp the db with the head revision
+        from alembic.config import Config
+        from alembic import command
+        alembic_cfg = Config(alembic_ini)
+        command.stamp(alembic_cfg, 'head')
+
     Session = sessionmaker(bind=engine)
     session = Session()
-    Base.metadata.create_all(engine)
     return session
 
 class JSONEncodedDict(TypeDecorator):
