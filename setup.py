@@ -3,6 +3,9 @@
 import os
 import sys
 
+__requires__ = ['SQLAlchemy >= 0.7']
+import pkg_resources
+
 from ansiblereport import __version__, __author__, __name__
 from distutils.core import setup
 
@@ -15,9 +18,9 @@ setup(name=__name__,
       url='https://github.com/sfromm/ansible-report',
       description='Utility to log and report ansible activity',
       license='GPLv3',
-      instal_requires=['sqlalchemy'],
       package_dir={ 'ansiblereport': 'lib/ansiblereport' },
       packages=['ansiblereport'],
       scripts=['bin/ansible-report'],
-      data_files=[(PLUGIN_PATH, ['plugins/callback_plugins/ansiblereport-logger.py'])]
+      data_files=[(PLUGIN_PATH, ['plugins/callback_plugins/ansiblereport-logger.py'])],
+      install_requires=['SQLAlchemy>=0.6', 'alembic', 'dateutil'],
 )
