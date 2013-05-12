@@ -32,6 +32,10 @@ RPMNVR = "$(NAME)-$(VERSION)-$(RPMRELEASE)$(RPMDIST)"
 
 all: clean python
 
+test:
+	PYTHONPATH=lib nosetests -d -v --with-coverage \
+		   --cover-erase --cover-package=ansiblereport
+
 clean:
 	@echo "Cleaning distutils leftovers"
 	rm -rf build
