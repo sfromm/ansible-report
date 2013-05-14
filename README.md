@@ -9,7 +9,7 @@ Requirements
 ============
 
 * [Ansible](http://ansible.cc) >= 1.2
-* [SQLAlchemy](http://www.sqlalchemy.org/)
+* [SQLAlchemy](http://www.sqlalchemy.org/) >= 0.7
 * [Alembic](https://pypi.python.org/pypi/alembic)
 * [python-dateutil](http://labix.org/python-dateutil)
 
