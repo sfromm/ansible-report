@@ -18,7 +18,7 @@ Example Output
 
 Here is an example output:
 
-    $ ansible-report --email --screen
+    $ ansible-report -o screen -o email
     =================== Playbooks ====================
 
     /var/lib/ansible/audit.yml: 
@@ -70,6 +70,16 @@ settings.  These are:
 
 The _smtp.server_ setting is what *ansible-report* will connect to when
 sending an email report to the configured recipients.
+
+Output Plugins
+==============
+
+All outputs are plugins.  Take a look at *lib/ansiblereport/output.py* and
+the existing implementations *plugins/output_plugins/screen.py* and
+*plugins/output_plugins/email.py*.  You can easily extend
+*OutputModule* from _output.py_ to create your own output.  If you do
+extend *ansible-report*, please consider sending a pull-request for the
+new output.
 
 Schema Migrations
 =================
