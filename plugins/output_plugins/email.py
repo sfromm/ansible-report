@@ -20,7 +20,20 @@ from ansiblereport.utils import *
 from ansiblereport.model import *
 
 class OutputModule:
-    ''' simple plugin that displays report information to STDOUT '''
+    '''
+    A simple plugin that displays report information to STDOUT.  Per
+    requirements, it implements:
+
+    name        Attribute with the name of the plugin
+    do_report   Method that will take a list of events and report
+                them in some manner.  It also takes an optional
+                set of keyword arguments.
+                The only optional keyword arguments that this
+                plugin supports are:
+                verbose         - Whether to be verbose in reporting
+                smtp_subject    - Subject for email report
+                smtp_recipient  - Recipient of email report
+    '''
     name = 'email'
 
     def do_report(self, events, **kwargs):

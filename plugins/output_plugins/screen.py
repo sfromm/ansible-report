@@ -21,7 +21,17 @@ from ansiblereport.model import *
 import ansiblereport.constants as C
 
 class OutputModule:
-    ''' simple plugin that displays report information to STDOUT '''
+    '''
+    A simple plugin that displays report information to STDOUT.  Per
+    requirements, it implements:
+
+    name        Attribute with the name of the plugin
+    do_report   Method that will take a list of events and report
+                them in some manner.  It also takes an optional
+                set of keyword arguments.
+                The only optional keyword argument that is supported
+                is 'verbose'.
+    '''
     name = 'screen'
 
     def do_report(self, events, **kwargs):
