@@ -3,8 +3,8 @@
 import sys
 import pkg_resources
 
-# fancy way to get the right version of sqlalchemy on rhel6 and
-# still have nosetests work.
+# fancy way to get the right version of sqlalchemy on rhel6
+# in case pkg_resources has already been loaded.
 def replace_dist(requirement):
     try:
         pkg_resources.require(requirement)

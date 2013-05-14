@@ -16,8 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
-__requires__ = ['SQLAlchemy >= 0.7']
+import sys
 import pkg_resources
+
+# fancy way to get the right version of sqlalchemy on rhel6
+# in case pkg_resources has already been loaded.
+def replace_dist(requirement):
+    try:
+        pkg_resources.require(requirement)
+    except pkg_resources.VersionConflict:
+        e = sys.exc_info()[1]
+        dist = e.args[0]
+        req = e.args[1]
+        if dist.key == req.key and not dist.location.endswith('.egg'):
+            del pkg_resources.working_set.by_key[dist.key]
+            # We assume there is no need to adjust sys.path
+            # and the associated pkg_resources.working_set.entries
+            return pkg_resources.require(requirement)
+replace_dist('SQLAlchemy >= 0.7')
 
 import os
 import pwd
