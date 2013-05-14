@@ -14,7 +14,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# along with ansible-report.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import smtplib
@@ -88,24 +88,30 @@ def format_task_brief(task, embedded=True):
                 task.timestamp.strftime(strftime),
                 task.hostname, task.module, task.result)
 
-def format_playbook_report(data):
+def format_heading(title, subheading=True):
+    if subheading:
+        return '\n  {0:-^40}\n\n'.format(' {0} '.format(title))
+    else:
+        return '{0:=^60}\n\n'.format(' {0} '.format(title))
+
+def format_playbook_report(playbook, tasks, stats):
     ''' take list of data and return formatted string '''
     report = ''
-    report += '{0:=^50}\n\n'.format(' Playbooks ')
-    for pb in data:
-        report += "%s: \n" % pb['playbook'].path
-        report += "  {0:>10}: {1} ({2})\n".format('User',
-                pb['playbook'].user.username, pb['playbook'].user.euid)
-        report += "  {0:>10}: {1}\n".format('Start time',
-                pb['playbook'].starttime.strftime(C.DEFAULT_STRFTIME))
-        report += "  {0:>10}: {1}\n".format('End time',
-                pb['playbook'].endtime.strftime(C.DEFAULT_STRFTIME))
+    report += format_heading('Playbook', subheading=False)
+    report += "  {0:>10}: {1}\n".format('Path', playbook.path)
+    report += "  {0:>10}: {1} ({2})\n".format('User',
+            playbook.user.username, playbook.user.euid)
+    report += "  {0:>10}: {1}\n".format('Start time',
+            playbook.starttime.strftime(C.DEFAULT_STRFTIME))
+    report += "  {0:>10}: {1}\n".format('End time',
+            playbook.endtime.strftime(C.DEFAULT_STRFTIME))
 
-        if 'tasks' in pb:
-            report += format_task_report(pb['tasks'])
+    if tasks:
+        report += format_task_report(tasks)
 
-        report += '\n  {0:-^25}\n\n'.format(' Summary ')
-        for host, stats in pb['stats'].items():
+    if stats:
+        report += format_heading('Summary')
+        for host, stats in stats.items():
             summary = ''
             if 'ok' in stats:
                 summary += "{0}={1}  ".format('ok', stats['ok'])
@@ -118,10 +124,9 @@ def format_playbook_report(data):
     return report
 
 def format_task_report(tasks, embedded=True):
+    ''' takes list of AnsibleTask and returns string '''
     report = ''
-    if len(tasks) < 1:
-        return report
-    report += '\n  {0:-^25}\n\n'.format(' Tasks ')
+    report += format_heading('Tasks', subheading=embedded)
     for task in tasks:
         args = []
         report += "  {0}\n".format(task[0])
@@ -157,14 +162,28 @@ def format_task_report(tasks, embedded=True):
         report += '\n'
     return report
 
-def email_report(report_data, smtp_subject=None, smtp_recipient=None):
+def reportable_task(task, verbose=False, embedded=True):
+    ''' determine if task is reportable
+
+    returns tuple (brief_summary, task.data) where
+    brief_summary is a string and task.data is JSON
+    '''
+    brief = format_task_brief(task, embedded)
+    if task.result in C.DEFAULT_TASK_WARN_RESULTS:
+        return (brief, task.data)
+    if task.result in C.DEFAULT_TASK_OKAY_RESULTS:
+        if 'changed' in task.data and bool(task.data['changed']):
+            return (brief, task.data)
+        if verbose:
+            return (brief, task.data)
+    return None
+
+def email_report(report_data,
+        smtp_subject=C.DEFAULT_SMTP_SUBJECT,
+        smtp_recipient=C.DEFAULT_SMTP_RECIPIENT):
     ''' pull together all the necessary details and send email report '''
-    smtp_server = get_smtp_server()
-    smtp_sender = get_smtp_sender()
-    if smtp_subject is None:
-        smtp_subject = get_smtp_subject()
-    if smtp_recipient is None:
-        smtp_recipient = get_smtp_recipient()
+    smtp_server = C.DEFAULT_SMTP_SERVER
+    smtp_sender = C.DEFAULT_SMTP_SENDER
     msg = MIMEText(report_data)
     msg['Subject'] = smtp_subject
     msg['From'] = smtp_sender
@@ -177,27 +196,6 @@ def email_report(report_data, smtp_subject=None, smtp_recipient=None):
         print 'failed to send email report: {0}'.format(str(e))
         return False
     return True
-
-def get_config_value(key, default):
-    ''' look up key in ansible.cfg '''
-    config = AC.load_config_file()
-    return AC.get_config(config, 'ansiblereport', key, None, default)
-
-def get_smtp_server():
-    ''' look up smtp_server in ansible.cfg '''
-    return get_config_value('smtp.server', C.DEFAULT_SMTP_SERVER)
-
-def get_smtp_subject():
-    ''' look up smtp_subject in ansible.cfg '''
-    return get_config_value('smtp.subject', C.DEFAULT_SMTP_SUBJECT)
-
-def get_smtp_sender():
-    ''' look up smtp_sender in ansible.cfg '''
-    return get_config_value('smtp.sender', C.DEFAULT_SMTP_SENDER)
-
-def get_smtp_recipient():
-    ''' look up smtp_recipient in ansible.cfg '''
-    return get_config_value('smtp.recipient', C.DEFAULT_SMTP_RECIPIENT)
 
 def parse_datetime_string(arg):
     ''' take string argument and convert to datetime object '''
