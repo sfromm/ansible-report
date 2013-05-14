@@ -43,6 +43,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/ansiblereport*
 %{_bindir}/ansible-report
 %{_datadir}/ansible_plugins/callback_plugins/ansiblereport-logger.py
+%{_datadir}/ansible-report/plugins/*.py
 %doc README.md COPYING
 
 %changelog
