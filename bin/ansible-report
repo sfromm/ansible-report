@@ -33,19 +33,9 @@ import ansiblereport
 import ansiblereport.constants as C
 from ansiblereport.model import *
 from ansiblereport.utils import *
+from ansiblereport.output_plugins import *
 
 DEFAULT_LIMIT = 0
-
-def get_report_task(options, task, embedded=True):
-    brief = format_task_brief(task, embedded)
-    if task.result in C.DEFAULT_TASK_WARN_RESULTS:
-        return (brief, task.data)
-    if task.result in C.DEFAULT_TASK_OKAY_RESULTS:
-        if 'changed' in task.data and bool(task.data['changed']):
-            return (brief, task.data)
-        if options.verbose:
-            return (brief, task.data)
-    return None
 
 def report_tasks(options, session, clauses):
     ''' report on specific tasks '''
@@ -54,13 +44,8 @@ def report_tasks(options, session, clauses):
         age = parse_datetime_string(options.age)
         if age:
             clauses.append(AnsibleTask.timestamp > age)
-    results = AnsibleTask.find_tasks(session,
+    return AnsibleTask.find_tasks(session,
             limit=options.limit, clauses=clauses)
-    for task in results:
-        t = get_report_task(options, task, embedded=False)
-        if t is not None:
-            tasks.append(t)
-    return tasks
 
 def report_playbooks(options, session, clauses):
     ''' report on playbook information '''
@@ -69,23 +54,10 @@ def report_playbooks(options, session, clauses):
         age = parse_datetime_string(options.age)
         if age:
             clauses.append(AnsiblePlaybook.starttime > age)
-    results = AnsiblePlaybook.get_last_n_playbooks(session,
+    return AnsiblePlaybook.get_last_n_playbooks(session,
             limit=options.limit, clauses=clauses)
-    for playbook in results:
-        tasks = []
-        for task in playbook.tasks:
-            t = get_report_task(options, task)
-            if t is not None:
-                tasks.append(t)
-        if len(tasks) > 0:
-            pb = {}
-            pb['tasks'] = tasks
-            pb['playbook'] = playbook
-            pb['stats'] = AnsiblePlaybook.get_playbook_stats(playbook)
-            playbooks.append(pb)
-    return playbooks
 
-def report(options, session):
+def report(options, session, kwargs):
     ''' select information from db for reporting on '''
     clauses = []
     report = []
@@ -101,38 +73,34 @@ def report(options, session):
             clauses.append(AnsibleTask.result == n)
     # For now, if clauses are provided, search tasks.
     if clauses:
-        tasks = report_tasks(options, session, clauses)
-        report_data = format_task_report(tasks)
+        data = report_tasks(options, session, clauses)
     else:
-        playbooks = report_playbooks(options, session, clauses)
-        if not playbooks:
-            return None
-        report_data = format_playbook_report(playbooks)
-    if report_data:
-        if 'screen' in options.output:
-            print report_data
-        if 'email' in options.output:
-            email_report(report_data)
-    return None
+        data = report_playbooks(options, session, clauses)
+    outputs = OutputPlugins([C.DEFAULT_OUTPUT_PLUGIN_PATH])
+    for plugin in options.output:
+        if plugin in outputs.plugins:
+            outputs.plugins[plugin].do_report(data, **kwargs)
+    return
 
 def version(prog):
     return "%s %s" % (prog, ansiblereport.__version__)
 
 def main(args):
     ''' main '''
+    kwargs = {}
     usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage, version=version("%prog"))
-    parser.add_option('-v', '--verbose', action='store_true', default=False,
-                      help="Be verbose")
+    parser.add_option('-v', '--verbose', action='store_true',
+                      default=C.DEFAULT_VERBOSE, help="Be verbose")
     parser.add_option('-o', '--output', metavar='OUTPUT',
                       action='append',
-                      choices=C.DEFAULT_OUTPUTS_AVAIL,
-                      default=C.DEFAULT_OUTPUT,
                       help='Output destination for report. '
-                           'Default is %s. Choices include: %s' % (
-                               ', '.join(C.DEFAULT_OUTPUT),
-                               ', '.join(C.DEFAULT_OUTPUTS_AVAIL)))
-
+                           'Default is %s.' % (
+                               ', '.join(C.DEFAULT_OUTPUT)))
+    parser.add_option('-e', '--extra-args', dest='extra_args',
+                      action='append',
+                      help='Set additional key=value variables from CLI. '
+                           'These will be passed to the output plugins')
     group = OptionGroup(parser, 'Task search criteria')
     group.add_option('-m', '--module-name', dest='module_name',
                      action='append',
@@ -153,8 +121,15 @@ def main(args):
                           'than this date string')
     parser.add_option_group(group)
     options, args = parser.parse_args()
+    if not options.output:
+        options.output = C.DEFAULT_OUTPUT
+    if options.extra_args:
+        for arg in options.extra_args:
+            (key, val) = arg.split('=', 1)
+            kwargs[key] = val
+    kwargs['verbose'] = options.verbose
     session = init_db_session()
-    report(options, session)
+    report(options, session, kwargs)
 
 if __name__ == '__main__':
     try:
