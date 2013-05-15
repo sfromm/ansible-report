@@ -58,4 +58,7 @@ class OutputModule:
                     report_tasks.append(t)
         if report_tasks:
             report += format_task_report(report_tasks, embedded=False)
+        for arg in kwargs.keys():
+            if not arg.startswith('smtp_'):
+                del kwargs[arg]
         email_report(report, **kwargs)
