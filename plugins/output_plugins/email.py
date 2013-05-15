@@ -39,8 +39,6 @@ class OutputModule:
     def do_report(self, events, **kwargs):
         ''' take list of events and email them to recipient '''
         report = ''
-        subject = None
-        recipient = None
         report_tasks = []
         if 'verbose' not in kwargs:
             kwargs['verbose'] = C.DEFAULT_VERBOSE
@@ -60,8 +58,4 @@ class OutputModule:
                     report_tasks.append(t)
         if report_tasks:
             report += format_task_report(report_tasks, embedded=False)
-        if 'smtp_subject' in kwargs:
-            subject = kwargs['smtp_subject']
-        if 'smtp_recipient' in kwargs:
-            recipient = kwargs['smtp_recipient']
-        email_report(report, smtp_subject=subject, smtp_recipient=recipient)
+        email_report(report, **kwargs)
