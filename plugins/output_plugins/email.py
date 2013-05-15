@@ -61,4 +61,5 @@ class OutputModule:
         for arg in kwargs.keys():
             if not arg.startswith('smtp_'):
                 del kwargs[arg]
-        email_report(report, **kwargs)
+        if report:
+            email_report(report, **kwargs)
