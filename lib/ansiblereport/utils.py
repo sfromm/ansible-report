@@ -33,7 +33,7 @@ try:
 except ImportError:
     from email.MIMEText import MIMEText
 
-def run_command(args, cwd=None):
+def run_command(args, cwd=None, data=None):
     ''' run a command via subprocess '''
     if isinstance(args, list):
         shell = False
@@ -42,11 +42,16 @@ def run_command(args, cwd=None):
     rc = 0
     out = ''
     err = ''
+    std_in = None
+    if data:
+        std_in = subprocess.PIPE
     try:
         cmd = subprocess.Popen(args, shell=shell, cwd=cwd,
+                               close_fds=True,
+                               stdin=std_in,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-        out, err = cmd.communicate()
+        out, err = cmd.communicate(input=data)
         rc = cmd.returncode
     except (OSError, IOError), e:
         logging.error("failed to run command: %s" % str(e))
