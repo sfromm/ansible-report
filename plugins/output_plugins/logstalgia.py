@@ -73,13 +73,13 @@ class OutputModule:
                 for task in event.tasks:
                     t = reportable_task(task, kwargs['verbose'])
                     if t is not None:
-                        if task.module not in modules and 'setup' not in task.module:
+                        if task.module not in modules:
                             modules.append(task.module)
                         logs.append(self._mk_event_log(task))
             elif isinstance(event, AnsibleTask):
                 t = reportable_task(event, kwargs['verbose'])
                 if t is not None:
-                    if task.module not in modules and 'setup' not in task.module:
+                    if task.module not in modules:
                         modules.append(event.module)
                     logs.append(self._mk_event_log(event))
         if logs:
