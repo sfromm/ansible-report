@@ -62,16 +62,13 @@ class JSONEncodedDict(TypeDecorator):
     def __repr__(self):
         return "JSONEncodedDict(%s)" % self.value
 
-def now():
-    return datetime.datetime.now()
-
 Base = declarative_base()
 
 class AnsibleTask(Base):
     __tablename__ = 'task'
 
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=now())
+    timestamp = Column(DateTime, default=datetime.datetime.now)
     hostname = Column(String)
     module = Column(String)
     result = Column(String)
@@ -85,12 +82,11 @@ class AnsibleTask(Base):
             Index('task_result_idx', 'result')
             )
 
-    def __init__(self, hostname, module, result, data, timestamp=now()):
+    def __init__(self, hostname, module, result, data):
         self.hostname = hostname
-        self.timestamp = timestamp
-        self.data = data
         self.module = module
         self.result = result
+        self.data = data
 
     def __repr__(self):
         return "<AnsibleTask<'%s', '%s', '%s'>" % (self.hostname, self.module, self.result)
@@ -133,8 +129,8 @@ class AnsiblePlaybook(Base):
     uuid = Column(String)
     user_id = Column(Integer, ForeignKey('user.id'))
     connection = Column(String)
-    starttime = Column(DateTime, default=now())
-    endtime = Column(DateTime, default=now())
+    starttime = Column(DateTime, default=datetime.datetime.now)
+    endtime = Column(DateTime, default=datetime.datetime.now)
     checksum = Column(String)
     __table_args__ = (
             Index('playbook_path_idx', 'path'),
