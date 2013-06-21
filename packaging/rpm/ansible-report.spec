@@ -1,4 +1,4 @@
-Name:       ansiblereport
+Name:       ansible-report
 Version:	0.1
 Release:	1%{?dist}
 Summary:	Reporting tool for Ansible
@@ -7,7 +7,7 @@ Group:		Development/Libraries
 License:	GPLv3
 URL:		https://github.com/sfromm/ansible-report
 #Source0:	https://github.com/sfromm/ansible-report/archive/release%{version}.tar.gz
-Source0:	ansiblereport-%{version}.tar.gz
+Source0:	%{name}-%{version}.tar.gz
 
 BuildArch:  noarch
 BuildRequires:	python-devel
@@ -40,12 +40,16 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%{python_sitelib}/ansiblereport*
+%{python_sitelib}/ansiblereport/*
+%{python_sitelib}/ansible_report*egg-info
 %{_bindir}/ansible-report
 %{_datadir}/ansible_plugins/callback_plugins/ansiblereport-logger.py
 %{_datadir}/ansible-report/plugins/*.py
 %doc README.md COPYING
 
 %changelog
+* Fri June 21 2013 Stephen Fromm <sfromm gmail com> - 0.1-0
+- Fixes to RPM spec to be consistent with name usage.
+
 * Thu May 2 2013 Stephen Fromm <sfromm gmail com> - 0.1-0
 - Initial version

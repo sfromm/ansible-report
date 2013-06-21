@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
-__name__ = 'ansiblereport'
+__name__ = 'ansible-report'
 __author__ = 'Stephen Fromm'
 __dbversion__ = 1
 __version__ = '0.1'

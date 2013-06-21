@@ -1,4 +1,4 @@
-NAME = 'ansiblereport'
+NAME = 'ansible-report'
 PYTHON=python
 
 VERSION := $(shell grep __version lib/ansiblereport/__init__.py | sed -e 's|^.*= ||' -e "s|'||g" )
@@ -21,7 +21,7 @@ endif
 
 # RPM build parameters
 RPMSPECDIR = packaging/rpm
-RPMSPEC = $(RPMSPECDIR)/ansiblereport.spec
+RPMSPEC = $(RPMSPECDIR)/$(NAME).spec
 RPMDIST = $(shell rpm --eval '%dist')
 RPMRELEASE = 1
 ifeq ($(OFFICIAL),)
@@ -59,6 +59,7 @@ pep8:
 	-pep8 -r --ignore=E501,E202,E302,E303 lib/ bin/ plugins/
 
 rpmcommon: sdist
+	@echo "make rpmcommon"
 	@mkdir -p rpm-build
 	@cp dist/*.gz rpm-build/
 	@echo '$(VERSION)'
@@ -67,6 +68,7 @@ rpmcommon: sdist
 		$(RPMSPEC) > rpm-build/$(NAME).spec
 
 srpm: rpmcommon
+	@echo make srpm
 	@rpmbuild --define "_topdir %(pwd)/rpm-build" \
 	--define "_builddir %{_topdir}" \
 	--define "_rpmdir %{_topdir}" \
@@ -75,7 +77,7 @@ srpm: rpmcommon
 	--define "_sourcedir %{_topdir}" \
 	-bs rpm-build/$(NAME).spec
 	@rm -f rpm-build/$(NAME).spec
-	@echo "ansiblereport SRPM is built:"
+	@echo "$(NAME) SRPM is built:"
 	@echo "    rpm-build/$(RPMNVR).src.rpm"
 
 rpm: rpmcommon
@@ -87,6 +89,6 @@ rpm: rpmcommon
 	--define "_sourcedir %{_topdir}" \
 	-ba rpm-build/$(NAME).spec
 	@rm -f rpm-build/$(NAME).spec
-	@echo "ansiblereport RPM is built:"
-	@echo "    rpm-build/$(RPMNVR).noarch.rpm"
+	@echo "$(NAME) RPM is built:"
+	@echo "    rpm-build/noarch/$(RPMNVR).noarch.rpm"
 
