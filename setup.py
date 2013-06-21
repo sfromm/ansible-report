@@ -7,6 +7,9 @@ import glob
 __requires__ = ['SQLAlchemy >= 0.7']
 import pkg_resources
 
+sys.path.append( os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'lib') )
+
 from ansiblereport import __version__, __author__, __name__
 from distutils.core import setup
 
