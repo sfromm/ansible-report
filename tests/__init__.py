@@ -22,6 +22,7 @@ replace_dist('SQLAlchemy >= 0.7')
 import unittest
 import getpass
 import os
+import multiprocessing
 
 import ansiblereport
 import ansiblereport.constants as C
@@ -34,6 +35,8 @@ from ansible import runner
 ALEMBIC_INI = os.path.join(os.path.dirname(__file__), 'alembic.test.ini')
 ANSIBLE_CFG = os.path.join(os.path.dirname(__file__), 'ansible.cfg')
 os.environ['ANSIBLE_CONFIG'] = ANSIBLE_CFG
+
+MAX_WORKERS = 50
 
 class TestModel(unittest.TestCase):
 
@@ -87,3 +90,14 @@ class TestPlugin(unittest.TestCase):
                 limit=self.limit, clauses=clauses)
         for r in results:
             self.assertEqual(r.module, self.module)
+
+    def test_process_concurrency(self):
+        ''' fork N processes and test concurrent writes to db '''
+        workers = []
+        for n in range(MAX_WORKERS):
+            prc = multiprocessing.Process(target=self._run, args=(self.module, []))
+            prc.start()
+            workers.append(prc)
+
+        for worker in workers:
+            worker.join()
