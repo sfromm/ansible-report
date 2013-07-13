@@ -17,6 +17,7 @@
 # along with ansible-report.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import pwd
 import smtplib
 import subprocess
 import traceback
@@ -32,6 +33,15 @@ try:
     from email.mime.text import MIMEText
 except ImportError:
     from email.MIMEText import MIMEText
+
+def get_user():
+    ''' return user information '''
+    try:
+        username = os.getlogin()
+        euid = pwd.getpwuid(os.geteuid())[0]
+        return (username, euid)
+    except Exception, e:
+        return (None, None)
 
 def run_command(args, cwd=None, data=None):
     ''' run a command via subprocess '''
