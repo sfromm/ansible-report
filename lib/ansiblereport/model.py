@@ -28,24 +28,6 @@ from sqlalchemy.ext.declarative import declarative_base
 
 import ansible.constants
 
-def init_db_session(alembic_ini=None, debug=False):
-    config = ansible.constants.load_config_file()
-    uri = ansible.constants.get_config(config, 'ansiblereport',
-            'sqlalchemy.url', None, 'sqlite://')
-    engine = create_engine(uri, echo=debug)
-    Base.metadata.create_all(engine)
-
-    if alembic_ini is not None:
-        # if we have an alembic.ini, stamp the db with the head revision
-        from alembic.config import Config
-        from alembic import command
-        alembic_cfg = Config(alembic_ini)
-        command.stamp(alembic_cfg, 'head')
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    return session
-
 class JSONEncodedDict(TypeDecorator):
     impl = Text
 
@@ -120,6 +102,13 @@ class AnsibleUser(Base):
 
     def __repr__(self):
         return "<AnsibleUser<'%s (effective %s)'>" % (self.username, self.euid)
+
+    @classmethod
+    def get_user(cls, session, username, euid=None):
+        if euid is None:
+            euid = username
+        return session.query(cls).filter(
+                and_(cls.username == username, cls.euid == euid))
 
 class AnsiblePlaybook(Base):
     __tablename__ = 'playbook'
