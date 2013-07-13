@@ -32,6 +32,12 @@ DEFAULT_SECTION = 'ansiblereport'
 
 DEFAULT_VERBOSE = False
 
+DEFAULT_BACKOFF_START = get_config_value('backoff.start', None, 0.5)
+DEFAULT_BACKOFF_MULT = get_config_value('backoff.mult', None, 1.05)
+DEFAULT_BACKOFF_MAX = get_config_value('backoff.max', None, 60)
+
+DEFAULT_DB_URI = get_config_value('sqlalchemy.url', None, 'sqlite://')
+
 DEFAULT_STRFTIME = '%Y-%m-%d %H:%M:%S'
 DEFAULT_SHORT_STRFTIME = '%H:%M:%S'
 DEFAULT_FRIENDLY_STRFTIME = '%Y-%m-%d %H:%M'

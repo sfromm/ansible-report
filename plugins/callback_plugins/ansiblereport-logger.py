@@ -35,15 +35,14 @@ def replace_dist(requirement):
             return pkg_resources.require(requirement)
 replace_dist('SQLAlchemy >= 0.7')
 
+import datetime
 import os
-import pwd
 import uuid
 import socket
-from ansible.constants import *
+import ansiblereport.constants as C
+from ansiblereport.manager import *
 from ansiblereport.model import *
 from ansiblereport.utils import *
-
-session = init_db_session()
 
 class CallbackModule(object):
     """
@@ -55,44 +54,41 @@ class CallbackModule(object):
         self.starttime = 0
         self.endtime = 0
         self.playbook = None
+        self.mgr = Manager(C.DEFAULT_DB_URI)
 
-    def _get_user(self):
-        try:
-            username = os.getlogin()
-            euid = pwd.getpwuid(os.getuid())[0]
-            return (username, euid)
-        except Exception, e:
-            return (None, None)
-
-    def _get_ansible_user(self):
-        (username, euid) = self._get_user()
-        query = session.query(AnsibleUser).\
-            filter(AnsibleUser.username == username).\
-            filter(AnsibleUser.euid == euid)
-        users = query.all()
-        if not users:
-            user = AnsibleUser(username, euid)
-            session.add(user)
-            session.commit()
-        else:
-            user = users[0]
-        return user
+    def _log_user(self):
+        def fn(conn):
+            (username, euid) = get_user()
+            users = AnsibleUser.get_user(conn, username, euid)
+            if users.count() > 0:
+                user = users.all()[0]
+            else:
+                user = AnsibleUser(username, euid)
+                conn.add(user)
+                conn.commit()
+            return user
+        return self.mgr.run(fn)
 
     def _log_task(self, task):
         ''' add result to database '''
-        session.add(task)
-        user = self._get_ansible_user()
-        task.user_id = user.id
-        if self.playbook:
-            task.playbook_id = self.playbook.id
-        session.commit()
+        def fn(conn):
+            conn.add(task)
+            user = self._log_user()
+            task.user_id = user.id
+            if self.playbook:
+                task.playbook_id = self.playbook.id
+            conn.commit()
+        self.mgr.run(fn)
 
     def _log_play(self, play):
-        session.add(play)
-        if play.user_id is None:
-            user = self._get_ansible_user()
-            play.user_id = user.id
-        session.commit()
+        ''' add play to database '''
+        def fn(conn):
+            conn.add(play)
+            if play.user_id is None:
+                user = self._log_user()
+                play.user_id = user.id
+            conn.commit()
+        self.mgr.run(fn)
 
     def on_any(self, *args, **kwargs):
         pass

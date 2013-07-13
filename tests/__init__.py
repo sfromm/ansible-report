@@ -24,26 +24,27 @@ import getpass
 import os
 import multiprocessing
 
+MAX_WORKERS = 75
+ALEMBIC_INI = os.path.join(os.path.dirname(__file__), 'alembic.test.ini')
+ANSIBLE_CFG = os.path.join(os.path.dirname(__file__), 'ansible.cfg')
+os.environ['ANSIBLE_CONFIG'] = ANSIBLE_CFG
+
 import ansiblereport
 import ansiblereport.constants as C
+from ansiblereport.manager import *
 from ansiblereport.model import *
 from ansiblereport.utils import *
 
 from ansible import callbacks
 from ansible import runner
 
-ALEMBIC_INI = os.path.join(os.path.dirname(__file__), 'alembic.test.ini')
-ANSIBLE_CFG = os.path.join(os.path.dirname(__file__), 'ansible.cfg')
-os.environ['ANSIBLE_CONFIG'] = ANSIBLE_CFG
-
-MAX_WORKERS = 50
 
 class TestModel(unittest.TestCase):
 
     def test_create_db(self):
-        session = init_db_session(alembic_ini=ALEMBIC_INI, debug=False)
-        session.commit()
-        self.assertEqual(session.connection().engine.name, 'sqlite')
+        mgr = Manager(C.DEFAULT_DB_URI, debug=True)
+        mgr.session.commit()
+        self.assertEqual(mgr.session.connection().engine.name, 'sqlite')
 
 class TestPlugin(unittest.TestCase):
 
@@ -65,7 +66,7 @@ class TestPlugin(unittest.TestCase):
                 transport='local',
                 callbacks=self.callbacks
                 )
-        self.session = init_db_session(alembic_ini=ALEMBIC_INI, debug=False)
+        self.mgr = Manager(C.DEFAULT_DB_URI, debug=True)
 
     # from ansible TestRunner.py
     def _run(self, module_name, module_args):
@@ -84,12 +85,14 @@ class TestPlugin(unittest.TestCase):
         assert 'ping' in result
 
     def test_module_callback_data(self):
-        clauses = []
-        clauses.append(AnsibleTask.module == self.module)
-        results = AnsibleTask.find_tasks(self.session,
-                limit=self.limit, clauses=clauses)
-        for r in results:
-            self.assertEqual(r.module, self.module)
+        def fn(conn):
+            clauses = []
+            clauses.append(AnsibleTask.module == self.module)
+            results = AnsibleTask.find_tasks(conn,
+                    limit=self.limit, clauses=clauses)
+            for r in results:
+                self.assertEqual(r.module, self.module)
+        return self.mgr.run(fn)
 
     def test_process_concurrency(self):
         ''' fork N processes and test concurrent writes to db '''
