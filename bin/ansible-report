@@ -31,33 +31,34 @@ from optparse import OptionGroup
 
 import ansiblereport
 import ansiblereport.constants as C
+from ansiblereport.manager import *
 from ansiblereport.model import *
 from ansiblereport.utils import *
 from ansiblereport.output_plugins import *
 
 DEFAULT_LIMIT = 0
 
-def report_tasks(options, session, clauses):
+def report_tasks(options, mgr, clauses):
     ''' report on specific tasks '''
     tasks = []
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
             clauses.append(AnsibleTask.timestamp > age)
-    return AnsibleTask.find_tasks(session,
+    return AnsibleTask.find_tasks(mgr.session,
             limit=options.limit, clauses=clauses)
 
-def report_playbooks(options, session, clauses):
+def report_playbooks(options, mgr, clauses):
     ''' report on playbook information '''
     playbooks = []
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
             clauses.append(AnsiblePlaybook.starttime > age)
-    return AnsiblePlaybook.get_last_n_playbooks(session,
+    return AnsiblePlaybook.get_last_n_playbooks(mgr.session,
             limit=options.limit, clauses=clauses)
 
-def report(options, session, kwargs):
+def report(options, mgr, kwargs):
     ''' select information from db for reporting on '''
     clauses = []
     report = []
@@ -73,9 +74,9 @@ def report(options, session, kwargs):
             clauses.append(AnsibleTask.result == n)
     # For now, if clauses are provided, search tasks.
     if clauses:
-        data = report_tasks(options, session, clauses)
+        data = report_tasks(options, mgr, clauses)
     else:
-        data = report_playbooks(options, session, clauses)
+        data = report_playbooks(options, mgr, clauses)
     outputs = OutputPlugins([C.DEFAULT_OUTPUT_PLUGIN_PATH])
     for plugin in options.output:
         if plugin in outputs.plugins:
@@ -128,8 +129,8 @@ def main(args):
             (key, val) = arg.split('=', 1)
             kwargs[key] = val
     kwargs['verbose'] = options.verbose
-    session = init_db_session()
-    report(options, session, kwargs)
+    mgr = Manager(C.DEFAULT_DB_URI)
+    report(options, mgr, kwargs)
 
 if __name__ == '__main__':
     try:
