@@ -114,6 +114,7 @@ def format_playbook_report(playbook, tasks, stats):
     report = ''
     report += format_heading('Playbook', subheading=False)
     report += "  {0:>10}: {1}\n".format('Path', playbook.path)
+    report += "  {0:>10}: {1}\n".format('UUID', playbook.uuid)
     report += "  {0:>10}: {1} ({2})\n".format('User',
             playbook.user.username, playbook.user.euid)
     report += "  {0:>10}: {1}\n".format('Start time',
