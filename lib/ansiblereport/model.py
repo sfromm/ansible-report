@@ -18,6 +18,7 @@
 
 import json
 import datetime
+import logging
 
 import ansiblereport.constants as C
 
@@ -45,6 +46,27 @@ class JSONEncodedDict(TypeDecorator):
         return "JSONEncodedDict(%s)" % self.value
 
 Base = declarative_base()
+
+def filter_query(session, sql, cls, col, arg):
+    clauses = []
+    if not hasattr(cls, col):
+        logging.warn('%s does not have the attribute %s' % (cls, col))
+        return sql
+    if isinstance(arg, list):
+        for n in arg:
+            clauses.append(getattr(cls, col) == n)
+    else:
+        # the time comparison is hard-coded for now.
+        # FIXME: make this user controllable.
+        if 'time' in col:
+            clauses.append(getattr(cls, col) > arg)
+        else:
+            clauses.append(getattr(cls, col) == arg)
+    if sql is None:
+        sql = session.query(cls).filter(or_(*clauses))
+    else:
+        sql = sql.filter(or_(*clauses))
+    return sql
 
 class AnsibleTask(Base):
     __tablename__ = 'task'
@@ -74,14 +96,16 @@ class AnsibleTask(Base):
         return "<AnsibleTask<'%s', '%s', '%s'>" % (self.hostname, self.module, self.result)
 
     @classmethod
-    def find_tasks(cls, session, clauses=None, limit=1):
-        if clauses is None:
-            clauses = []
+    def find_tasks(cls, session, args=None, limit=1):
+        sql = None
+        if args is not None:
+            for col in args:
+                if hasattr(cls, col):
+                    sql = filter_query(session, sql, cls, col, args[col])
         if limit == 0:
-            limit = None
-        return session.query(cls).filter(
-                and_(*clauses)
-                ).order_by(cls.timestamp.desc()).limit(limit)
+            return sql.order_by(cls.timestamp.desc())
+        else:
+            return sql.order_by(cls.timestamp.desc()).limit(limit)
 
 class AnsibleUser(Base):
     __tablename__ = 'user'
@@ -141,14 +165,16 @@ class AnsiblePlaybook(Base):
         return session.query(cls).get(identifier)
 
     @classmethod
-    def get_last_n_playbooks(cls, session, clauses=None, limit=1):
-        if clauses is None:
-            clauses = []
+    def get_last_n_playbooks(cls, session, args=None, limit=1):
+        sql = None
+        if args is not None:
+            for col in args:
+                if hasattr(cls, col):
+                    sql = filter_query(session, sql, cls, col, args[col])
         if limit == 0:
-            limit = None
-        return session.query(cls).filter(
-                or_(*clauses)
-                ).order_by(cls.endtime.desc()).limit(limit)
+            return sql.order_by(cls.starttime.desc())
+        else:
+            return sql.order_by(cls.starttime.desc()).limit(limit)
 
     @classmethod
     def get_playbook_stats(cls, playbook):

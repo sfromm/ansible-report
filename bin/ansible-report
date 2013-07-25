@@ -38,45 +38,42 @@ from ansiblereport.output_plugins import *
 
 DEFAULT_LIMIT = 0
 
-def report_tasks(options, mgr, clauses):
+def report_tasks(options, mgr, args):
     ''' report on specific tasks '''
     tasks = []
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
-            clauses.append(AnsibleTask.timestamp > age)
+            args['timestamp'] = age
     return AnsibleTask.find_tasks(mgr.session,
-            limit=options.limit, clauses=clauses)
+            limit=options.limit, args=args)
 
-def report_playbooks(options, mgr, clauses):
+def report_playbooks(options, mgr, args):
     ''' report on playbook information '''
     playbooks = []
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
-            clauses.append(AnsiblePlaybook.starttime > age)
+            args['starttime'] = age
     return AnsiblePlaybook.get_last_n_playbooks(mgr.session,
-            limit=options.limit, clauses=clauses)
+            limit=options.limit, args=args)
 
 def report(options, mgr, kwargs):
     ''' select information from db for reporting on '''
-    clauses = []
+    args = {}
     report = []
     report_data = ''
     if options.hostname:
-        for n in options.hostname:
-            clauses.append(AnsibleTask.hostname == n)
+        args['hostname'] = options.hostname
     if options.module_name:
-        for n in options.module_name:
-            clauses.append(AnsibleTask.module == n)
+        args['module'] = options.module_name
     if options.result:
-        for n in options.result:
-            clauses.append(AnsibleTask.result == n)
-    # For now, if clauses are provided, search tasks.
-    if clauses:
-        data = report_tasks(options, mgr, clauses)
+        args['result'] = options.result
+    # For now, if args are provided, search tasks.
+    if args:
+        data = report_tasks(options, mgr, args)
     else:
-        data = report_playbooks(options, mgr, clauses)
+        data = report_playbooks(options, mgr, args)
     outputs = OutputPlugins([C.DEFAULT_OUTPUT_PLUGIN_PATH])
     for plugin in options.output:
         if plugin in outputs.plugins:
