@@ -19,6 +19,7 @@
 import imp
 import glob
 import os
+import logging
 
 class OutputPlugins:
     ''' manager class for ansible-report plugins '''
@@ -45,7 +46,8 @@ class OutputPlugins:
                 module = imp.load_module(name, fp, pathname, description)
             finally:
                 fp.close()
-        except:
+        except Exception, e:
+            logging.error("failed to load plugin '%s': %s", name, str(e))
             return
         self.plugins[name] = module.OutputModule()
 
