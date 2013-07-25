@@ -86,10 +86,10 @@ class TestPlugin(unittest.TestCase):
 
     def test_module_callback_data(self):
         def fn(conn):
-            clauses = []
-            clauses.append(AnsibleTask.module == self.module)
+            args = {}
+            args['module'] = [self.module]
             results = AnsibleTask.find_tasks(conn,
-                    limit=self.limit, clauses=clauses)
+                    limit=self.limit, args=args)
             for r in results:
                 self.assertEqual(r.module, self.module)
         return self.mgr.run(fn)
