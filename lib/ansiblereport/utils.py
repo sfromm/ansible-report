@@ -144,54 +144,61 @@ def format_task_report(tasks, embedded=True):
     report += format_heading('Tasks', subheading=embedded)
     for task in tasks:
         args = []
-        report += "  {0}\n".format(task[0])
-        if 'invocation' not in task[1]:
+        report += "  {0}\n".format(format_task_brief(task, embedded))
+        if 'invocation' not in task.data:
             report += '\n'
             continue
-        invocation = task[1]['invocation']
-        module_name = task[1]['invocation']['module_name']
+        invocation = task.data['invocation']
+        module_name = task.data['invocation']['module_name']
+
         if module_name == 'setup':
             report += '\n'
             continue
-        if 'changed' in task[1] and bool(task[1]['changed']):
+        if 'changed' in task.data and bool(task.data['changed']):
             if 'module_name' == 'setup':
                 continue
             report += "    {0:>10}: {1}\n".format('Changed', 'yes')
 
+        if not embedded:
+            if task.user:
+                args.append(('User', task.user.username))
+            if task.playbook:
+                args.append(('Playbook', task.playbook.path))
+
         if module_name == 'git':
-            args.append(('SHA1', task[1]['after']))
+            args.append(('SHA1', task.data['after']))
         elif module_name == 'copy' or module_name == 'file':
-            if 'path' in task[1]:
-                args.append(('Path', task[1]['path']))
-            elif 'dest' in task[1]:
-                args.append(('Path', task[1]['dest']))
+            if 'path' in task.data:
+                args.append(('Path', task.data['path']))
+            elif 'dest' in task.data:
+                args.append(('Path', task.data['dest']))
         if invocation['module_args']:
             args.append(('Arguments', invocation['module_args']))
-        if 'msg' in task[1] and task[1]['msg']:
-            args.append(('Message', task[1]['msg']))
-        elif 'result' in task[1] and task[1]['result']:
-            results = '\n'.join(task[1]['result'])
+        if 'msg' in task.data and task.data['msg']:
+            args.append(('Message', task.data['msg']))
+        elif 'result' in task.data and task.data['result']:
+            results = '\n'.join(task.data['result'])
             args.append(('Result', results))
         for arg in args:
             report += "    {0:>10}: {1}\n".format(arg[0], arg[1])
         report += '\n'
     return report
 
-def reportable_task(task, verbose=False, embedded=True):
+def is_reportable_task(task, verbose=False, embedded=True):
     ''' determine if task is reportable
 
-    returns tuple (brief_summary, task.data) where
-    brief_summary is a string and task.data is JSON
+    returns True if changed or failed
+    returns True if okay and verbose is True
+    otherwise returns False
     '''
-    brief = format_task_brief(task, embedded)
     if task.result in C.DEFAULT_TASK_WARN_RESULTS:
-        return (brief, task.data)
+        return True
     if task.result in C.DEFAULT_TASK_OKAY_RESULTS:
         if 'changed' in task.data and bool(task.data['changed']):
-            return (brief, task.data)
+            return True
         if verbose:
-            return (brief, task.data)
-    return None
+            return True
+    return False
 
 def email_report(report_data,
         smtp_subject=C.DEFAULT_SMTP_SUBJECT,

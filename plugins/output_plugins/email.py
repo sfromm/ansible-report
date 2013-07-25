@@ -46,16 +46,14 @@ class OutputModule:
             tasks = []
             if isinstance(event, AnsiblePlaybook):
                 for task in event.tasks:
-                    t = reportable_task(task, kwargs['verbose'])
-                    if t is not None:
-                        tasks.append(t)
+                    if is_reportable_task(task, kwargs['verbose']):
+                        tasks.append(task)
                 if tasks:
                     stats = AnsiblePlaybook.get_playbook_stats(event)
                     report += format_playbook_report(event, tasks, stats)
             elif isinstance(event, AnsibleTask):
-                t = reportable_task(event, kwargs['verbose'])
-                if t is not None:
-                    report_tasks.append(t)
+                if is_reportable_task(event, kwargs['verbose']):
+                    report_tasks.append(event)
         if report_tasks:
             report += format_task_report(report_tasks, embedded=False)
         for arg in kwargs.keys():
