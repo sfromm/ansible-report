@@ -24,6 +24,7 @@ import traceback
 import logging
 import dateutil.parser
 import datetime
+import json
 
 import ansiblereport.constants as C
 
@@ -89,6 +90,9 @@ def git_version(path):
         f.close()
     return version
 
+def pretty_json(arg, indent=4):
+    return json.dumps(arg, sort_keys=True, indent=indent)
+
 def format_task_brief(task, embedded=True):
     ''' summarize a task into a brief string '''
     strftime = C.DEFAULT_SHORT_STRFTIME
@@ -152,12 +156,7 @@ def format_task_report(tasks, embedded=True):
         invocation = task.data['invocation']
         module_name = task.data['invocation']['module_name']
 
-        if module_name == 'setup':
-            report += '\n'
-            continue
         if 'changed' in task.data and bool(task.data['changed']):
-            if 'module_name' == 'setup':
-                continue
             report += "    {0:>10}: {1}\n".format('Changed', 'yes')
 
         if not embedded:
@@ -180,6 +179,9 @@ def format_task_report(tasks, embedded=True):
         elif 'result' in task.data and task.data['result']:
             results = '\n'.join(task.data['result'])
             args.append(('Result', results))
+        elif 'ansible_facts' in task.data:
+            args.append(('Facts',
+                         pretty_json(task.data['ansible_facts'], indent=8)))
         for arg in args:
             report += "    {0:>10}: {1}\n".format(arg[0], arg[1])
         report += '\n'
