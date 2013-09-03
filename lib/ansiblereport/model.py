@@ -95,6 +95,10 @@ class AnsibleTask(Base):
     def __repr__(self):
         return "<AnsibleTask<'%s', '%s', '%s'>" % (self.hostname, self.module, self.result)
 
+    def delete(self, session):
+        ''' remove object from database '''
+        session.delete(self)
+
     @classmethod
     def find_tasks(cls, session, args=None, limit=1):
         sql = None
@@ -117,8 +121,10 @@ class AnsibleUser(Base):
             Index('user_username_idx', 'username'),
             )
 
-    tasks = relation("AnsibleTask", backref='user')
-    playbooks = relation("AnsiblePlaybook", backref='user')
+    tasks = relation("AnsibleTask", backref='user',
+                     cascade='all, delete, delete-orphan')
+    playbooks = relation("AnsiblePlaybook", backref='user',
+                         cascade='all, delete, delete-orphan')
 
     def __init__(self, user, euid):
         self.username = user
@@ -126,6 +132,10 @@ class AnsibleUser(Base):
 
     def __repr__(self):
         return "<AnsibleUser<'%s (effective %s)'>" % (self.username, self.euid)
+
+    def delete(self, session):
+        ''' remove object from database '''
+        session.delete(self)
 
     @classmethod
     def get_user(cls, session, username, euid=None):
@@ -152,13 +162,18 @@ class AnsiblePlaybook(Base):
             Index('playbook_starttime_idx', 'starttime')
             )
 
-    tasks = relation("AnsibleTask", backref='playbook')
+    tasks = relation("AnsibleTask", backref='playbook',
+                     cascade='all, delete, delete-orphan')
 
     def __init__(self, uuid):
         self.uuid = uuid
 
     def __repr__(self):
         return "<AnsiblePlaybook<'%s', '%s'>" % (self.path, self.uuid)
+
+    def delete(self, session):
+        ''' remove object from database '''
+        session.delete(self)
 
     @classmethod
     def by_id(cls, session, identifier):
