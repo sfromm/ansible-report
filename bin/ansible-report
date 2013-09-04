@@ -40,7 +40,6 @@ DEFAULT_LIMIT = 0
 
 def report_tasks(options, mgr, args):
     ''' report on specific tasks '''
-    tasks = []
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
@@ -50,7 +49,6 @@ def report_tasks(options, mgr, args):
 
 def report_playbooks(options, mgr, args):
     ''' report on playbook information '''
-    playbooks = []
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
@@ -58,21 +56,37 @@ def report_playbooks(options, mgr, args):
     return AnsiblePlaybook.get_last_n_playbooks(mgr.session,
             limit=options.limit, args=args)
 
-def report(options, mgr, kwargs):
-    ''' select information from db for reporting on '''
+def build_task_args(options):
+    ''' return dict of search criteria for tasks '''
     args = {}
-    report = []
-    report_data = ''
     if options.hostname:
         args['hostname'] = options.hostname
     if options.module_name:
         args['module'] = options.module_name
     if options.result:
         args['result'] = options.result
-    # For now, if args are provided, search tasks.
+    return args
+
+def build_playbook_args(options):
+    ''' return dict of search criteria for playbooks '''
+    args = {}
+    if options.uuid:
+        args['uuid'] = options.uuid
+    if options.path:
+        args['path'] = options.path
+    if options.connection:
+        args['connection'] = options.connection
+    return args
+
+def report(options, mgr, kwargs):
+    ''' select information from db for reporting on '''
+    report = []
+    report_data = ''
+    args = build_task_args(options)
     if args:
         data = report_tasks(options, mgr, args)
     else:
+        args = build_playbook_args(options)
         data = report_playbooks(options, mgr, args)
     outputs = OutputPlugins([C.DEFAULT_OUTPUT_PLUGIN_PATH])
     for plugin in options.output:
@@ -99,6 +113,19 @@ def main(args):
                       action='append',
                       help='Set additional key=value variables from CLI. '
                            'These will be passed to the output plugins')
+
+    group = OptionGroup(parser, 'Playbook search criteria')
+    group.add_option('--uuid', dest='uuid',
+                     action='append',
+                     help="playbook uuid(s) to restrict report to")
+    group.add_option('--path', dest='path',
+                     action='append',
+                     help="playbook path(s) to restrict report to")
+    group.add_option('--connection', dest='connection',
+                     action='append',
+                     help="playbook connection(s) to restrict report to")
+    parser.add_option_group(group)
+
     group = OptionGroup(parser, 'Task search criteria')
     group.add_option('-m', '--module-name', dest='module_name',
                      action='append',
