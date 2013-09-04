@@ -186,6 +186,8 @@ class AnsiblePlaybook(Base):
             for col in args:
                 if hasattr(cls, col):
                     sql = filter_query(session, sql, cls, col, args[col])
+        if sql is None:
+            return []
         if limit == 0:
             return sql.order_by(cls.starttime.desc())
         else:
