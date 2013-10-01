@@ -21,6 +21,7 @@ Requires:	python-sqlalchemy0.7
 BuildRequires:  python-sqlalchemy > 0.5
 Requires:   python-sqlalchemy > 0.5
 %endif
+Provides: ansiblereport
 
 %description
 A utility to record events in a database via ansible callbacks and then 
@@ -48,8 +49,8 @@ rm -rf $RPM_BUILD_ROOT
 %doc README.md COPYING
 
 %changelog
-* Fri June 21 2013 Stephen Fromm <sfromm gmail com> - 0.1-0
+* Fri Jun 21 2013 Stephen Fromm <sfromm gmail com>
 - Fixes to RPM spec to be consistent with name usage.
 
-* Thu May 2 2013 Stephen Fromm <sfromm gmail com> - 0.1-0
+* Thu May  2 2013 Stephen Fromm <sfromm gmail com> - 0.1-0
 - Initial version
