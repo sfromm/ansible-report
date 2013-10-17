@@ -225,11 +225,15 @@ def email_report(report_data,
 
 def parse_datetime_string(arg):
     ''' take string argument and convert to datetime object '''
+    # if parsedatetime gets packaged, it could replace this
+    # https://github.com/bear/parsedatetime
     try:
         date = dateutil.parser.parse(arg, default=True)
     except ValueError:
         parts = arg.split()
-        if len(parts) != 3 and parts[2] != 'ago':
+        if len(parts) == 1 and parts[0] == 'now':
+            return datetime.datetime.now()
+        elif len(parts) != 3 or parts[2] != 'ago':
             return None
         try:
             interval = int(parts[0])
