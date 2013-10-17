@@ -21,6 +21,7 @@
 __requires__ = ['SQLAlchemy >= 0.7']
 import pkg_resources
 
+import operator
 import os
 import json
 import sys
@@ -94,6 +95,45 @@ def report(options, mgr, kwargs):
             outputs.plugins[plugin].do_report(data, **kwargs)
     return
 
+def prune_tasks(options, mgr, args):
+    if options.age:
+        age = parse_datetime_string(options.age)
+        if age:
+            args['timestamp'] = age
+    return AnsibleTask.find_tasks(mgr.session, limit=options.limit, args=args, timeop=operator.le)
+
+def prune_playbooks(options, mgr, args):
+    if options.age:
+        age = parse_datetime_string(options.age)
+        if age:
+            args['starttime'] = age
+    return AnsiblePlaybook.find_playbooks(mgr.session, limit=options.limit, args=args, timeop=operator.le)
+
+def prune(options, mgr, kwargs):
+    args = build_playbook_args(options)
+    try:
+        pbs = prune_playbooks(options, mgr, args)
+        for p in pbs:
+            if options.verbose:
+                print "Removing %s | %s" % (p.path, p.starttime)
+            mgr.session.delete(p)
+        args = {}
+        args = build_task_args(options)
+        tasks = prune_tasks(options, mgr, args)
+        for t in tasks:
+            if options.verbose:
+                print "Removing %s | %s | %s" % (t.hostname, t.module, t.timestamp)
+            mgr.session.delete(t)
+        mgr.session.commit()
+        if 'sqlite' in mgr.engine.driver:
+            if options.verbose:
+                print "Running VACUUM"
+            mgr.engine.execute("VACUUM")
+    except Exception, e:
+        mgr.session.rollback()
+        print "Rolling back; failed to prune database: %s" % str(e)
+
+
 def version(prog):
     return "%s %s" % (prog, ansiblereport.__version__)
 
@@ -113,6 +153,9 @@ def main(args):
                       action='append',
                       help='Set additional key=value variables from CLI. '
                            'These will be passed to the output plugins')
+    parser.add_option('--prune', action='store_true', default=False,
+                      help='Prune old events from database. '
+                           'Requires --age option.')
 
     group = OptionGroup(parser, 'Playbook search criteria')
     group.add_option('--uuid', dest='uuid',
@@ -154,7 +197,14 @@ def main(args):
             kwargs[key] = val
     kwargs['verbose'] = options.verbose
     mgr = Manager(C.DEFAULT_DB_URI)
-    report(options, mgr, kwargs)
+    if options.prune:
+        if not options.age:
+            print "Please define an age to prune the database."
+            return 1
+        prune(options, mgr, kwargs)
+    else:
+        report(options, mgr, kwargs)
+    return 0
 
 if __name__ == '__main__':
     try:
