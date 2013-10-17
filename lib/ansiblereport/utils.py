@@ -166,7 +166,8 @@ def format_task_report(tasks, embedded=True):
                 args.append(('Playbook', task.playbook.path))
 
         if module_name == 'git':
-            args.append(('SHA1', task.data['after']))
+            if 'after' in task.data:
+                args.append(('SHA1', task.data['after']))
         elif module_name == 'copy' or module_name == 'file':
             if 'path' in task.data:
                 args.append(('Path', task.data['path']))
