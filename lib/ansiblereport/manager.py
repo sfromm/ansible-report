@@ -51,6 +51,7 @@ class Manager(object):
                     if not isinstance(text, basestring):
                         raise
                     if "Lost connection" in text \
+                        or "transaction has been rolled back" in text \
                         or "database is locked" in text:
 
                         # raise exception if have retried too often
