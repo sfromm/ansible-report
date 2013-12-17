@@ -100,30 +100,28 @@ def prune_tasks(options, mgr, args):
         age = parse_datetime_string(options.age)
         if age:
             args['timestamp'] = age
-    return AnsibleTask.find_tasks(mgr.session, limit=options.limit, args=args, timeop=operator.le)
+    return AnsibleTask.find_tasks(mgr.session, limit=options.limit, args=args, timeop=operator.le, orderby=False)
 
 def prune_playbooks(options, mgr, args):
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
             args['starttime'] = age
-    return AnsiblePlaybook.find_playbooks(mgr.session, limit=options.limit, args=args, timeop=operator.le)
+    return AnsiblePlaybook.find_playbooks(mgr.session, limit=options.limit, args=args, timeop=operator.le, orderby=False)
 
 def prune(options, mgr, kwargs):
     args = build_playbook_args(options)
     try:
         pbs = prune_playbooks(options, mgr, args)
-        for p in pbs:
-            if options.verbose:
-                print "Removing %s | %s" % (p.path, p.starttime)
-            mgr.session.delete(p)
+        count = pbs.delete()
+        if options.verbose:
+            print "Removed %s playbooks from database" % count
         args = {}
         args = build_task_args(options)
         tasks = prune_tasks(options, mgr, args)
-        for t in tasks:
-            if options.verbose:
-                print "Removing %s | %s | %s" % (t.hostname, t.module, t.timestamp)
-            mgr.session.delete(t)
+        count = tasks.delete()
+        if options.verbose:
+            print "Removed %s tasks from database" % count
         mgr.session.commit()
         if 'sqlite' in mgr.engine.driver:
             if options.verbose:

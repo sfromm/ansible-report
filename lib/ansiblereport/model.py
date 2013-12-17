@@ -101,16 +101,19 @@ class AnsibleTask(Base):
         session.delete(self)
 
     @classmethod
-    def find_tasks(cls, session, args=None, limit=1, timeop=operator.gt):
+    def find_tasks(cls, session, args=None, limit=1, timeop=operator.gt, orderby=True):
         sql = None
         if args is not None:
             for col in args:
                 if hasattr(cls, col):
                     sql = filter_query(session, sql, cls, col, args[col], timeop)
-        if limit == 0:
-            return sql.order_by(cls.timestamp.desc())
+        if orderby:
+            if limit == 0:
+                return sql.order_by(cls.timestamp.desc())
+            else:
+                return sql.order_by(cls.timestamp.desc()).limit(limit)
         else:
-            return sql.order_by(cls.timestamp.desc()).limit(limit)
+            return sql
 
 class AnsibleUser(Base):
     __tablename__ = 'user'
@@ -181,19 +184,22 @@ class AnsiblePlaybook(Base):
         return session.query(cls).get(identifier)
 
     @classmethod
-    def find_playbooks(cls, session, args=None, limit=1, timeop=operator.gt):
+    def find_playbooks(cls, session, args=None, limit=1, timeop=operator.gt, orderby=True):
         sql = None
         if args is not None:
             for col in args:
                 if hasattr(cls, col):
                     sql = filter_query(session, sql, cls, col, args[col], timeop)
-        if limit == 0:
-            return sql.order_by(cls.starttime.desc())
+        if orderby:
+            if limit == 0:
+                return sql.order_by(cls.starttime.desc())
+            else:
+                return sql.order_by(cls.starttime.desc()).limit(limit)
         else:
-            return sql.order_by(cls.starttime.desc()).limit(limit)
+            return sql
 
     @classmethod
-    def get_last_n_playbooks(cls, session, args=None, limit=1, timeop=operator.gt):
+    def get_last_n_playbooks(cls, session, args=None, limit=1, timeop=operator.gt, orderby=True):
         sql = None
         if args is not None:
             for col in args:
@@ -201,10 +207,13 @@ class AnsiblePlaybook(Base):
                     sql = filter_query(session, sql, cls, col, args[col], timeop)
         if sql is None:
             return []
-        if limit == 0:
-            return sql.order_by(cls.starttime.desc())
+        if orderby:
+            if limit == 0:
+                return sql.order_by(cls.starttime.desc())
+            else:
+                return sql.order_by(cls.starttime.desc()).limit(limit)
         else:
-            return sql.order_by(cls.starttime.desc()).limit(limit)
+            return sql
 
     @classmethod
     def get_playbook_stats(cls, playbook):
