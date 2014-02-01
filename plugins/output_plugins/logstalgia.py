@@ -22,6 +22,8 @@ import ansiblereport.constants as C
 from datetime import datetime, tzinfo
 from dateutil.tz import *
 import sys
+import os.path
+import ansible.utils
 
 class OutputModule:
     '''
@@ -44,51 +46,89 @@ class OutputModule:
     %r is the module name and module_args
     '''
     name = 'logstalgia'
-    STRFTIME_FORMAT = '[%d/%b/%Y:%H:%M:%S %z]'
+    STRFTIME_FORMAT = '%s'
 
-    def _mk_event_log(self, task):
+    def _get_module_category(self, module):
+        ''' look up a module's category '''
+        path = ansible.utils.plugins.module_finder.find_plugin(module)
+        if path is None:
+            return 'NA'
+        else:
+            return os.path.basename(os.path.dirname(path))
+
+    def _mk_custom_log(self, task):
+        '''
+        use logstalgia custom log format
+        http://code.google.com/p/logstalgia/wiki/CustomLogFormat
+        '''
         module_args = ''
         if task.data is not None:
-            module_args = task.module
+            module_args += '/%s' % task.module
             if 'invocation' in task.data:
                 if 'module_args' in task.data['invocation']:
                     args = task.data['invocation']['module_args']
                     if len(args) > 0:
-                        module_args += '_%s' % args.replace(' ', '%20')
+                        module_args += '/%s' % args.replace(' ', '%20')
         ts = task.timestamp.replace(tzinfo=tzlocal())
-        log = "{0} - {1} {2} \"TASK {3} -\" {4} -".format(
-                task.hostname,
-                task.user.username,
-                ts.strftime(self.STRFTIME_FORMAT),
-                module_args,
-                task.result)
+        log = "{0}|{1}|{2}|{3}|{4}".format(
+            ts.strftime(self.STRFTIME_FORMAT),
+            task.hostname,
+            module_args,
+            task.result,
+            '-'
+        )
         return log
+
+    def _format_group_match(self, category_set, category):
+        ''' format the grouping option for logstalgia '''
+        match = "^/(%s)" % ("|".join(category_set[category]))
+        return "-g '{0},{1},15' ".format(category, match)
 
     def do_report(self, events, **kwargs):
         ''' take list of events and visualize via logstalgia '''
         logs = []
         modules = []
+        hosts = []
+        category = {}
         for event in events:
             if isinstance(event, AnsiblePlaybook):
                 for task in event.tasks:
-                    t = reportable_task(task, kwargs['verbose'])
+                    t = is_reportable_task(task, kwargs['verbose'])
                     if t is not None:
                         if task.module not in modules:
                             modules.append(task.module)
-                        logs.append(self._mk_event_log(task))
+                        if task.hostname not in hosts:
+                            hosts.append(task.hostname)
+                        logs.append(self._mk_custom_log(task))
             elif isinstance(event, AnsibleTask):
                 t = reportable_task(event, kwargs['verbose'])
                 if t is not None:
                     if task.module not in modules:
                         modules.append(event.module)
+                    if task.hostname not in hosts:
+                        hosts.append(task.hostname)
                     logs.append(self._mk_event_log(event))
         if logs:
             logs.reverse()
+            logs.append('\0')
             opts = ''
             if 'logstalgia_opts' in kwargs:
                 opts += '%s ' % kwargs['logstalgia_opts']
-            for m in sorted(modules):
-                opts += '-g %s,%s,15 ' % (m, m)
+            for m in modules:
+                c = self._get_module_category(m)
+                if m is None:
+                    m = 'NA'
+                if c in category:
+                    if m not in category[c]:
+                        category[c].append(m)
+                else:
+                    category[c] = [m]
+            for c in sorted(category.keys()):
+                # special case NA category
+                if c != 'NA':
+                    opts += self._format_group_match(category, c)
+            c = 'NA'
+            opts += self._format_group_match(category, c)
             cmd = 'logstalgia %s -' % opts
             rc, out, err = run_command(cmd, data='\n'.join(logs))
             if rc != 0:
