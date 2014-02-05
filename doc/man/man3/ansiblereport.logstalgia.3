@@ -1,0 +1,44 @@
+.TH  "" "" 
+.SH ANSIBLEREPORT.LOGSTALGIA(3)
+.SS NAME
+.PP
+logstalgia \- Logstalgia output plugin for visualization
+.SS SYNOPSIS
+.PP
+ansible\-report \-o logstalgia [options]
+.SS DESCRIPTION
+.PP
+This will query the \f[I]ansible\-report\f[] database with the provided
+criteria and then pipe that into Logstalgia
+(http://code.google.com/p/logstalgia/) for visualization.
+You must have Logstalgia already installed.
+You can provide extra arguments to Logstalgia if needed.
+.SS OPTIONS
+.PP
+\f[I]\-e\f[] logstalgia_opts=options, \f[I]\-\-extra\-args\f[]
+logstalgia_opts=options
+.PP
+Provide additional options to Logstalgia when rendering the video.
+One example would be:
+.IP
+.nf
+\f[C]
+\-e\ logstalgia_opts=\[aq]\-1280x720\ \-\-output\-ppm\-stream\ logs.ppm\[aq]
+\f[]
+.fi
+.PP
+This would allow you to post\-process the PPM file with something like
+ffmpeg.
+More details on recording videos can be found at:
+.IP
+.nf
+\f[C]
+http://code.google.com/p/logstalgia/wiki/Videos\ \ \ \ 
+\f[]
+.fi
+.SS COPYRIGHT
+.PP
+Copyright, 2014, University of Oregon
+.PP
+\f[I]ansible\-report\f[] is released under the terms of the GPLv3
+License.
