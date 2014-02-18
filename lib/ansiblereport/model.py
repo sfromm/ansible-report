@@ -77,6 +77,7 @@ class AnsibleTask(Base):
     hostname = Column(String)
     module = Column(String)
     result = Column(String)
+    changed = Column(Boolean)
     data = Column(JSONEncodedDict)
     user_id = Column(Integer, ForeignKey('user.id'))
     playbook_id = Column(Integer, ForeignKey('playbook.id'))
@@ -84,6 +85,7 @@ class AnsibleTask(Base):
             Index('task_timestamp_idx', 'timestamp'),
             Index('task_hostname_idx', 'hostname'),
             Index('task_module_idx', 'module'),
+            Index('task_changed_idx', 'changed'),
             Index('task_result_idx', 'result')
             )
 
@@ -92,6 +94,8 @@ class AnsibleTask(Base):
         self.module = module
         self.result = result
         self.data = data
+        if isinstance(data, dict) and 'changed' in data:
+            self.changed = bool(self.data['changed'])
 
     def __repr__(self):
         return "<AnsibleTask<'%s', '%s', '%s'>" % (self.hostname, self.module, self.result)
