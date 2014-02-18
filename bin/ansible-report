@@ -154,6 +154,8 @@ def main(args):
     parser.add_option('--prune', action='store_true', default=False,
                       help='Prune old events from database. '
                            'Requires --age option.')
+    parser.add_option('--stats', action='store_true', default=False,
+                      help='Only report stats of playbooks and tasks')
 
     group = OptionGroup(parser, 'Playbook search criteria')
     group.add_option('--uuid', dest='uuid',
@@ -194,6 +196,7 @@ def main(args):
             (key, val) = arg.split('=', 1)
             kwargs[key] = val
     kwargs['verbose'] = options.verbose
+    kwargs['stats'] = options.stats
     mgr = Manager(C.DEFAULT_DB_URI)
     if options.prune:
         if not options.age:

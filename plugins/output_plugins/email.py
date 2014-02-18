@@ -36,12 +36,26 @@ class OutputModule:
     '''
     name = 'email'
 
+    def _update_stats(self, host, stats):
+        if 'total' not in self.report_stats:
+            self.report_stats['total'] = {}
+        for key in stats:
+            if key not in self.report_stats[host]:
+                self.report_stats[host][key] = 0
+            self.report_stats[host][key] += stats[key]
+            if key not in self.report_stats['total']:
+                self.report_stats['total'][key] = 0
+            self.report_stats['total'][key] += stats[key]
+
     def do_report(self, events, **kwargs):
         ''' take list of events and email them to recipient '''
+        self.report_stats = {}
         report = ''
         report_tasks = []
         if 'verbose' not in kwargs:
             kwargs['verbose'] = C.DEFAULT_VERBOSE
+        if 'stats' not in kwargs:
+            kwargs['stats'] = C.DEFAULT_STATS
         for event in events:
             tasks = []
             if isinstance(event, AnsiblePlaybook):
@@ -50,12 +64,27 @@ class OutputModule:
                         tasks.append(task)
                 if tasks:
                     stats = AnsiblePlaybook.get_playbook_stats(event)
-                    report += format_playbook_report(event, tasks, stats)
+                    if kwargs['stats']:
+                        for host in stats:
+                            if host not in self.report_stats:
+                                self.report_stats[host] = stats[host]
+                            else:
+                                self._update_stats(host, stats[host])
+                    else:
+                        report += format_playbook_report(event, tasks, stats)
             elif isinstance(event, AnsibleTask):
                 if is_reportable_task(event, kwargs['verbose']):
-                    report_tasks.append(event)
+                    if kwargs['stats']:
+                        stats = AnsibleTask.get_task_stats(event)
+                        self._update_stats(event.hostname, stats[event.hostname])
+                    else:
+                        report_tasks.append(event)
         if report_tasks:
             report += format_task_report(report_tasks, embedded=False)
+        if self.report_stats:
+            totals = { 'total': self.report_stats.pop('total') }
+            report += format_stats(self.report_stats, heading=False)
+            report += format_stats(totals)
         for arg in kwargs.keys():
             if not arg.startswith('smtp_'):
                 del kwargs[arg]

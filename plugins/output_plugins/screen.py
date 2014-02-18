@@ -34,11 +34,27 @@ class OutputModule:
     '''
     name = 'screen'
 
+    def _update_stats(self, host, stats):
+        if host not in self.report_stats:
+            self.report_stats[host] = {}
+        if 'total' not in self.report_stats:
+            self.report_stats['total'] = {}
+        for key in stats:
+            if key not in self.report_stats[host]:
+                self.report_stats[host][key] = 0
+            self.report_stats[host][key] += stats[key]
+            if key not in self.report_stats['total']:
+                self.report_stats['total'][key] = 0
+            self.report_stats['total'][key] += stats[key]
+
     def do_report(self, events, **kwargs):
         ''' take list of events and report them to the screen '''
+        self.report_stats = {}
         report_tasks = []
         if 'verbose' not in kwargs:
             kwargs['verbose'] = C.DEFAULT_VERBOSE
+        if 'stats' not in kwargs:
+            kwargs['stats'] = C.DEFAULT_STATS
         for event in events:
             tasks = []
             if isinstance(event, AnsiblePlaybook):
@@ -47,9 +63,24 @@ class OutputModule:
                         tasks.append(task)
                 if tasks:
                     stats = AnsiblePlaybook.get_playbook_stats(event)
-                    print format_playbook_report(event, tasks, stats)
+                    if kwargs['stats']:
+                        for host in stats:
+                            if host not in self.report_stats:
+                                self.report_stats[host] = stats[host]
+                            else:
+                                self._update_stats(host, stats[host])
+                    else:
+                        print format_playbook_report(event, tasks, stats)
             elif isinstance(event, AnsibleTask):
                 if is_reportable_task(event, kwargs['verbose']):
-                    report_tasks.append(event)
+                    if kwargs['stats']:
+                        stats = AnsibleTask.get_task_stats(event)
+                        self._update_stats(event.hostname, stats[event.hostname])
+                    else:
+                        report_tasks.append(event)
         if report_tasks:
             print format_task_report(report_tasks, embedded=False)
+        if self.report_stats:
+            totals = { 'total': self.report_stats.pop('total') }
+            print format_stats(self.report_stats, heading=False)
+            print format_stats(totals)

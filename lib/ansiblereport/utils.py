@@ -108,10 +108,27 @@ def format_task_brief(task, embedded=True):
                 task.hostname, task.module, task.result)
 
 def format_heading(title, subheading=True):
+    ''' format a heading in a report '''
     if subheading:
         return '\n  {0:-^40}\n\n'.format(' {0} '.format(title))
     else:
         return '{0:=^60}\n\n'.format(' {0} '.format(title))
+
+def format_stats(stats, heading=True):
+    ''' format playbook stat data '''
+    report = ''
+    if heading:
+        report = format_heading('Summary')
+    for host, stats in stats.items():
+        summary = ''
+        if 'ok' in stats:
+            summary += "{0}={1}  ".format('ok', stats['ok'])
+        for stat in sorted(stats.keys()):
+            if stat == 'ok':
+                continue
+            summary += "{0}={1}  ".format(stat.lower(), stats[stat])
+        report += "  {0:<20}: {1}\n".format(host, summary)
+    return report
 
 def format_playbook_report(playbook, tasks, stats):
     ''' take list of data and return formatted string '''
@@ -130,16 +147,7 @@ def format_playbook_report(playbook, tasks, stats):
         report += format_task_report(tasks)
 
     if stats:
-        report += format_heading('Summary')
-        for host, stats in stats.items():
-            summary = ''
-            if 'ok' in stats:
-                summary += "{0}={1}  ".format('ok', stats['ok'])
-            for stat in sorted(stats.keys()):
-                if stat == 'ok':
-                    continue
-                summary += "{0}={1}  ".format(stat.lower(), stats[stat])
-            report += "  {0:<20}: {1}\n".format(host, summary)
+        report += format_stats(stats)
         report += "\n\n\n"
     return report
 

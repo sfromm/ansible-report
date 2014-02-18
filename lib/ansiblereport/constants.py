@@ -30,6 +30,7 @@ def get_config_value(key, env_var, default):
 DEFAULT_SECTION = 'ansiblereport'
 
 DEFAULT_VERBOSE = False
+DEFAULT_STATS = False
 
 DEFAULT_BACKOFF_START = get_config_value('backoff.start', None, 0.5)
 DEFAULT_BACKOFF_MULT = get_config_value('backoff.mult', None, 1.05)
