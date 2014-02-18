@@ -28,6 +28,8 @@ MAX_WORKERS = 75
 ALEMBIC_INI = os.path.join(os.path.dirname(__file__), 'alembic.test.ini')
 ANSIBLE_CFG = os.path.join(os.path.dirname(__file__), 'ansible.cfg')
 os.environ['ANSIBLE_CONFIG'] = ANSIBLE_CFG
+TEST_PLAYBOOK = 'tests/test_ansible_notify.yml'
+VERBOSITY = 0
 
 import ansiblereport
 import ansiblereport.constants as C
@@ -35,9 +37,9 @@ from ansiblereport.manager import *
 from ansiblereport.model import *
 from ansiblereport.utils import *
 
-from ansible import callbacks
-from ansible import runner
-
+import ansible.runner as ans_runner
+import ansible.playbook as ans_playbook
+import ansible.callbacks as ans_callbacks
 
 class TestModel(unittest.TestCase):
 
@@ -50,29 +52,32 @@ class TestPlugin(unittest.TestCase):
 
     def setUp(self):
         self.user = getpass.getuser()
-        self.module = 'ping'
+        self.module_name = 'ping'
+        self.module_args = []
         self.limit = 1
-        self.callbacks = callbacks.DefaultRunnerCallbacks()
-        self.runner = runner.Runner(
-                module_name=self.module,
-                module_args='',
+        self.host_list = 'tests/hosts'
+        self.transport = 'local'
+        self.runner = None
+        self.mgr = Manager(C.DEFAULT_DB_URI, debug=True)
+
+    # from ansible TestRunner.py
+    def _run_task(self, module_name='ping', module_args=[]):
+        self.module_name = module_name
+        self.module_args =  module_args
+        runner_cb = ans_callbacks.DefaultRunnerCallbacks()
+        self.runner = ans_runner.Runner(
+                module_name=self.module_name,
+                module_args=' '.join(self.module_args),
                 remote_user=self.user,
                 remote_pass=None,
-                host_list='tests/hosts',
+                host_list=self.host_list,
                 timeout=5,
                 forks=1,
                 background=0,
                 pattern='all',
-                transport='local',
-                callbacks=self.callbacks
+                transport=self.transport,
+                callbacks=runner_cb,
                 )
-        self.mgr = Manager(C.DEFAULT_DB_URI, debug=True)
-
-    # from ansible TestRunner.py
-    def _run(self, module_name, module_args):
-        self.runner.module_name = module_name
-        args = ' '.join(module_args)
-        self.runner.module_args = args
         results = self.runner.run()
         # when using nosetests this will only show up on failure
         # which is pretty useful
@@ -80,25 +85,49 @@ class TestPlugin(unittest.TestCase):
         assert "localhost" in results['contacted']
         return results['contacted']['localhost']
 
+    def _run_playbook(self, playbook):
+        stats = ans_callbacks.AggregateStats()
+        playbook_cb = ans_callbacks.PlaybookCallbacks(verbose=VERBOSITY)
+        playbook_runner_cb = ans_callbacks.PlaybookRunnerCallbacks(stats, verbose=VERBOSITY)
+        self.playbook = ans_playbook.PlayBook(
+            playbook=playbook,
+            host_list=self.host_list,
+            forks=1,
+            timeout=5,
+            remote_user=self.user,
+            remote_pass=None,
+            extra_vars=None,
+            stats=stats,
+            callbacks=playbook_cb,
+            runner_callbacks=playbook_runner_cb
+            )
+        result = self.playbook.run()
+        return result
+
     def test_module_callback(self):
-        result = self._run(self.module, [])
+        result = self._run_task()
         assert 'ping' in result
 
     def test_module_callback_data(self):
         def fn(conn):
             args = {}
-            args['module'] = [self.module]
+            args['module'] = [self.module_name]
             results = AnsibleTask.find_tasks(conn,
                     limit=self.limit, args=args)
             for r in results:
-                self.assertEqual(r.module, self.module)
+                self.assertEqual(r.module, self.module_name)
         return self.mgr.run(fn)
+
+    def test_module_notify(self):
+        ''' test handling of notify tasks '''
+        results = self._run_playbook(TEST_PLAYBOOK)
+        assert 'localhost' in results
 
     def test_process_concurrency(self):
         ''' fork N processes and test concurrent writes to db '''
         workers = []
         for n in range(MAX_WORKERS):
-            prc = multiprocessing.Process(target=self._run, args=(self.module, []))
+            prc = multiprocessing.Process(target=self._run_task, args=())
             prc.start()
             workers.append(prc)
 
