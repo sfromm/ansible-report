@@ -115,6 +115,17 @@ class AnsibleTask(Base):
         else:
             return sql
 
+    @classmethod
+    def get_task_stats(cls, task):
+        results = { task.hostname : {} }
+        for key in C.DEFAULT_TASK_RESULTS:
+            results[task.hostname][key.lower()] = 0
+            results[task.hostname]['changed'] = 0
+        if 'changed' in task.data and bool(task.data['changed']):
+            results[task.hostname]['changed'] += 1
+        results[task.hostname][task.result.lower()] += 1
+        return results
+
 class AnsibleUser(Base):
     __tablename__ = 'user'
 
