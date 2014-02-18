@@ -134,6 +134,7 @@ class CallbackModule(object):
         self.playbook = AnsiblePlaybook(str(self.uuid))
 
     def playbook_on_notify(self, host, handler):
+        ''' reports name of host and name of handler playbook will execute '''
         pass
 
     def on_no_hosts_matched(self):
