@@ -95,7 +95,7 @@ class AnsibleTask(Base):
         self.result = result
         self.data = data
         if isinstance(data, dict) and 'changed' in data:
-            self.changed = bool(self.data['changed'])
+            self.changed = self.data['changed']
 
     def __repr__(self):
         return "<AnsibleTask<'%s', '%s', '%s'>" % (self.hostname, self.module, self.result)
@@ -125,7 +125,7 @@ class AnsibleTask(Base):
         for key in C.DEFAULT_TASK_RESULTS:
             results[task.hostname][key.lower()] = 0
             results[task.hostname]['changed'] = 0
-        if 'changed' in task.data and bool(task.data['changed']):
+        if task.changed:
             results[task.hostname]['changed'] += 1
         results[task.hostname][task.result.lower()] += 1
         return results
@@ -239,7 +239,7 @@ class AnsiblePlaybook(Base):
                 for key in C.DEFAULT_TASK_RESULTS:
                     results[task.hostname][key.lower()] = 0
                     results[task.hostname]['changed'] = 0
-            if 'changed' in task.data and bool(task.data['changed']):
+            if task.changed:
                 results[task.hostname]['changed'] += 1
             results[task.hostname][task.result.lower()] += 1
         return results

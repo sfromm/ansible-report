@@ -164,7 +164,7 @@ def format_task_report(tasks, embedded=True):
         invocation = task.data['invocation']
         module_name = task.data['invocation']['module_name']
 
-        if 'changed' in task.data and bool(task.data['changed']):
+        if task.changed:
             report += "    {0:>10}: {1}\n".format('Changed', 'yes')
 
         if not embedded:
@@ -206,7 +206,7 @@ def is_reportable_task(task, verbose=False, embedded=True):
     if task.result in C.DEFAULT_TASK_WARN_RESULTS:
         return True
     if task.result in C.DEFAULT_TASK_OKAY_RESULTS:
-        if 'changed' in task.data and bool(task.data['changed']):
+        if task.changed:
             return True
         if verbose:
             return True
