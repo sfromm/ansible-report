@@ -60,6 +60,8 @@ def report_playbooks(options, mgr, args):
 def build_task_args(options):
     ''' return dict of search criteria for tasks '''
     args = {}
+    if options.changed:
+        args['changed'] = options.changed
     if options.hostname:
         args['hostname'] = options.hostname
     if options.module_name:
@@ -170,6 +172,8 @@ def main(args):
     parser.add_option_group(group)
 
     group = OptionGroup(parser, 'Task search criteria')
+    group.add_option('-c', '--changed', action='store_true',
+                     help="search only for tasks that reported changed")
     group.add_option('-m', '--module-name', dest='module_name',
                      action='append',
                      help="module name(s) to restrict report to")
