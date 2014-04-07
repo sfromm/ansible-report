@@ -37,16 +37,14 @@ from ansiblereport.model import *
 from ansiblereport.utils import *
 from ansiblereport.output_plugins import *
 
-DEFAULT_LIMIT = 0
-
 def report_tasks(options, mgr, args):
     ''' report on specific tasks '''
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
             args['timestamp'] = age
-    return AnsibleTask.find_tasks(mgr.session,
-            limit=options.limit, args=args)
+    return AnsibleTask.find_tasks(mgr.session, limit=options.limit, 
+                                  args=args, intersection=options.intersection)
 
 def report_playbooks(options, mgr, args):
     ''' report on playbook information '''
@@ -54,8 +52,8 @@ def report_playbooks(options, mgr, args):
         age = parse_datetime_string(options.age)
         if age:
             args['starttime'] = age
-    return AnsiblePlaybook.get_last_n_playbooks(mgr.session,
-            limit=options.limit, args=args)
+    return AnsiblePlaybook.get_last_n_playbooks(mgr.session, limit=options.limit, 
+                                                args=args, intersection=options.intersection)
 
 def build_task_args(options):
     ''' return dict of search criteria for tasks '''
@@ -102,14 +100,20 @@ def prune_tasks(options, mgr, args):
         age = parse_datetime_string(options.age)
         if age:
             args['timestamp'] = age
-    return AnsibleTask.find_tasks(mgr.session, limit=options.limit, args=args, timeop=operator.le, orderby=False)
+    return AnsibleTask.find_tasks(mgr.session, limit=options.limit, 
+                                  args=args, timeop=operator.le, 
+                                  intersection=options.intersection,
+                                  orderby=False)
 
 def prune_playbooks(options, mgr, args):
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
             args['starttime'] = age
-    return AnsiblePlaybook.find_playbooks(mgr.session, limit=options.limit, args=args, timeop=operator.le, orderby=False)
+    return AnsiblePlaybook.find_playbooks(mgr.session, limit=options.limit, 
+                                          args=args, timeop=operator.le, 
+                                          intersection=options.intersection,
+                                          orderby=False)
 
 def prune(options, mgr, kwargs):
     args = build_playbook_args(options)
@@ -186,8 +190,11 @@ def main(args):
 
     group = OptionGroup(parser, 'General search criteria')
     group.add_option('-l', '--limit', metavar='LIMIT',
-                     default=DEFAULT_LIMIT,
+                     default=C.DEFAULT_LIMIT,
                      help="limit reported events to N")
+    group.add_option('-&', '--intersection', action='store_true',
+                     default=C.DEFAULT_INTERSECTION,
+                     help="restrict results to the intersection of search criteria")
     group.add_option('--age', metavar='AGE',
                      help='Restrict report to events no older '
                           'than this date string')
