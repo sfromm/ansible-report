@@ -31,6 +31,8 @@ DEFAULT_SECTION = 'ansiblereport'
 
 DEFAULT_VERBOSE = False
 DEFAULT_STATS = False
+DEFAULT_INTERSECTION = get_config_value('intersection', 'ANSIBLEREPORT_INTERSECTION', False)
+DEFAULT_LIMIT = get_config_value('limit', 'ANSIBLEREPORT_LIMIT', 0)
 
 DEFAULT_BACKOFF_START = get_config_value('backoff.start', None, 0.5)
 DEFAULT_BACKOFF_MULT = get_config_value('backoff.mult', None, 1.05)
