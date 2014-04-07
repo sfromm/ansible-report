@@ -23,223 +23,73 @@ import operator
 
 import ansiblereport.constants as C
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.types import TypeDecorator, Text
-from sqlalchemy.ext.declarative import declarative_base
+from peewee import *
 
 import ansible.constants
 
-class JSONEncodedDict(TypeDecorator):
-    impl = Text
+class JSONField(CharField):
+    ''' Custom JSON field '''
 
-    def process_bind_param(self, value, dialect):
-        if value is not None:
-            value = json.dumps(value)
-        return value
+    def db_value(self, value):
+        return json.dumps(value)
 
-    def process_result_value(self, value, dialect):
-        if value is not None:
-            value = json.loads(value)
-        return value
-
-    def __repr__(self):
-        return "JSONEncodedDict(%s)" % self.value
-
-Base = declarative_base()
-
-def filter_query(session, sql, cls, col, arg, timeop):
-    clauses = []
-    if not hasattr(cls, col):
-        logging.warn('%s does not have the attribute %s' % (cls, col))
-        return sql
-    if isinstance(arg, list):
-        for n in arg:
-            clauses.append(getattr(cls, col) == n)
-    else:
-        # the time comparison is hard-coded for now.
-        # FIXME: make this user controllable.
-        if 'time' in col:
-            clauses.append(timeop(getattr(cls, col), arg))
-        else:
-            clauses.append(getattr(cls, col) == arg)
-    if sql is None:
-        sql = session.query(cls).filter(or_(*clauses))
-    else:
-        sql = sql.filter(or_(*clauses))
-    return sql
-
-class AnsibleTask(Base):
-    __tablename__ = 'task'
-
-    id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.datetime.now)
-    hostname = Column(String)
-    module = Column(String)
-    result = Column(String)
-    changed = Column(Boolean)
-    data = Column(JSONEncodedDict)
-    user_id = Column(Integer, ForeignKey('user.id'))
-    playbook_id = Column(Integer, ForeignKey('playbook.id'))
-    __table_args__ = (
-            Index('task_timestamp_idx', 'timestamp'),
-            Index('task_hostname_idx', 'hostname'),
-            Index('task_module_idx', 'module'),
-            Index('task_changed_idx', 'changed'),
-            Index('task_result_idx', 'result')
-            )
-
-    def __init__(self, hostname, module, result, data):
-        self.hostname = hostname
-        self.module = module
-        self.result = result
-        self.data = data
-        if isinstance(data, dict) and 'changed' in data:
-            self.changed = self.data['changed']
+    def python_value(self, value):
+        try:
+            return json.loads(value)
+        except:
+            return value
 
     def __repr__(self):
-        return "<AnsibleTask<'%s', '%s', '%s'>" % (self.hostname, self.module, self.result)
+        return "JSONField(%s)" % self.value
 
-    def delete(self, session):
-        ''' remove object from database '''
-        session.delete(self)
+database_proxy = Proxy()
 
-    @classmethod
-    def find_tasks(cls, session, args=None, limit=1, timeop=operator.gt, orderby=True):
-        sql = None
-        if args is not None:
-            for col in args:
-                if hasattr(cls, col):
-                    sql = filter_query(session, sql, cls, col, args[col], timeop)
-        if orderby:
-            if limit == 0:
-                return sql.order_by(cls.timestamp.desc())
-            else:
-                return sql.order_by(cls.timestamp.desc()).limit(limit)
-        else:
-            return sql
+class BaseModel(Model):
+    class Meta:
+        database = database_proxy
 
-    @classmethod
-    def get_task_stats(cls, task):
-        results = { task.hostname : {} }
-        for key in C.DEFAULT_TASK_RESULTS:
-            results[task.hostname][key.lower()] = 0
-            results[task.hostname]['changed'] = 0
-        if task.changed:
-            results[task.hostname]['changed'] += 1
-        results[task.hostname][task.result.lower()] += 1
-        return results
+class Task(BaseModel):
+    timestamp = DateTimeField(default=datetime.datetime.now)
+    hostname  = CharField()
+    module    = CharField()
+    result    = CharField()
+    changed   = BooleanField()
+    data      = JSONField()
+    user      = ForeignKeyField(User, related_name='tasks')
+    playbook  = ForeignKeyField(Playbook, related_name='tasks')
+    
+    class Meta:
+        db_table = 'task'
+        indexes = (
+            (('timestamp'), False),
+            (('hostname'), False),
+            (('module'), False),
+            (('changed'), False),
+            (('result'), False),
+        )
 
-class AnsibleUser(Base):
-    __tablename__ = 'user'
+class User(BaseModel):
+    username = CharField()
+    euid     = CharField()
 
-    id = Column(Integer, primary_key=True)
-    username = Column(String)
-    euid = Column(Integer)
-    __table_args__ = (
-            Index('user_username_idx', 'username'),
-            )
+    class Meta:
+        db_table = 'user'
+        indexes = ( (('username', 'euid'), True) )
 
-    tasks = relation("AnsibleTask", backref='user',
-                     cascade='all, delete, delete-orphan')
-    playbooks = relation("AnsiblePlaybook", backref='user',
-                         cascade='all, delete, delete-orphan')
+class Playbook(BaseModel):
+    path       = CharField()
+    uuid       = CharField()
+    user       = ForeignKeyField(User, related_name='playbooks')
+    connection = CharField()
+    starttime  = DateTimeField(default=datetime.datetime.now)
+    endtime    = DateTimeField(default=datetime.datetime.now)
+    checksum   = CharField()
 
-    def __init__(self, user, euid):
-        self.username = user
-        self.euid = euid
-
-    def __repr__(self):
-        return "<AnsibleUser<'%s (effective %s)'>" % (self.username, self.euid)
-
-    def delete(self, session):
-        ''' remove object from database '''
-        session.delete(self)
-
-    @classmethod
-    def get_user(cls, session, username, euid=None):
-        if euid is None:
-            euid = username
-        return session.query(cls).filter(
-                and_(cls.username == username, cls.euid == euid))
-
-class AnsiblePlaybook(Base):
-    __tablename__ = 'playbook'
-
-    id = Column(Integer, primary_key=True)
-    path = Column(String)
-    uuid = Column(String)
-    user_id = Column(Integer, ForeignKey('user.id'))
-    connection = Column(String)
-    starttime = Column(DateTime, default=datetime.datetime.now)
-    endtime = Column(DateTime, default=datetime.datetime.now)
-    checksum = Column(String)
-    __table_args__ = (
-            Index('playbook_path_idx', 'path'),
-            Index('playbook_uuid_idx', 'uuid'),
-            Index('playbook_connection_idx', 'connection'),
-            Index('playbook_starttime_idx', 'starttime')
-            )
-
-    tasks = relation("AnsibleTask", backref='playbook',
-                     cascade='all, delete, delete-orphan')
-
-    def __init__(self, uuid):
-        self.uuid = uuid
-
-    def __repr__(self):
-        return "<AnsiblePlaybook<'%s', '%s'>" % (self.path, self.uuid)
-
-    def delete(self, session):
-        ''' remove object from database '''
-        session.delete(self)
-
-    @classmethod
-    def by_id(cls, session, identifier):
-        return session.query(cls).get(identifier)
-
-    @classmethod
-    def find_playbooks(cls, session, args=None, limit=1, timeop=operator.gt, orderby=True):
-        sql = None
-        if args is not None:
-            for col in args:
-                if hasattr(cls, col):
-                    sql = filter_query(session, sql, cls, col, args[col], timeop)
-        if orderby:
-            if limit == 0:
-                return sql.order_by(cls.starttime.desc())
-            else:
-                return sql.order_by(cls.starttime.desc()).limit(limit)
-        else:
-            return sql
-
-    @classmethod
-    def get_last_n_playbooks(cls, session, args=None, limit=1, timeop=operator.gt, orderby=True):
-        sql = None
-        if args is not None:
-            for col in args:
-                if hasattr(cls, col):
-                    sql = filter_query(session, sql, cls, col, args[col], timeop)
-        if sql is None:
-            return []
-        if orderby:
-            if limit == 0:
-                return sql.order_by(cls.starttime.desc())
-            else:
-                return sql.order_by(cls.starttime.desc()).limit(limit)
-        else:
-            return sql
-
-    @classmethod
-    def get_playbook_stats(cls, playbook):
-        results = {}
-        for task in playbook.tasks:
-            if task.hostname not in results:
-                results[task.hostname] = {}
-                for key in C.DEFAULT_TASK_RESULTS:
-                    results[task.hostname][key.lower()] = 0
-                    results[task.hostname]['changed'] = 0
-            if task.changed:
-                results[task.hostname]['changed'] += 1
-            results[task.hostname][task.result.lower()] += 1
-        return results
+    class Meta:
+        db_table = 'playbook'
+        indexes = (
+            (('path'), False),
+            (('uuid'), False),
+            (('connection'), False),
+            (('starttime'), False),
+        )
