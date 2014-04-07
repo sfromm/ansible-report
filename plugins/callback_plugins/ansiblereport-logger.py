@@ -57,38 +57,25 @@ class CallbackModule(object):
         self.mgr = Manager(C.DEFAULT_DB_URI)
 
     def _log_user(self):
-        def fn(conn):
-            (username, euid) = get_user()
-            users = AnsibleUser.get_user(conn, username, euid)
-            if users.count() > 0:
-                user = users.all()[0]
-            else:
-                user = AnsibleUser(username, euid)
-                conn.add(user)
-                conn.commit()
-            return user
-        return self.mgr.run(fn)
+        (username, euid) = get_user()
+        if euid is None:
+            euid = username
+        return self.mgr.get_or_create(AnsibleUser, username=username, euid=euid)
 
     def _log_task(self, task):
         ''' add result to database '''
-        def fn(conn):
-            conn.add(task)
-            user = self._log_user()
-            task.user_id = user.id
-            if self.playbook:
-                task.playbook_id = self.playbook.id
-            conn.commit()
-        self.mgr.run(fn)
+        user = self._log_user()
+        task.user = user
+        if self.playbook:
+            task.playbook = self.playbook
+        self.mgr.save(task)
 
     def _log_play(self, play):
         ''' add play to database '''
-        def fn(conn):
-            conn.add(play)
-            if play.user_id is None:
-                user = self._log_user()
-                play.user_id = user.id
-            conn.commit()
-        self.mgr.run(fn)
+        if play.user_id is None:
+            user = self._log_user()
+            play.user = user
+        self.mgr.save(play)
 
     def on_any(self, *args, **kwargs):
         pass
