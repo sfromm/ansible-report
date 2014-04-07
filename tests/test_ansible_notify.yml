@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+      - action: ping
+
+      - command: hostname
+        notify: get uptime
+
+  handlers:
+      - name: get uptime
+        command: uptime
+

@@ -29,6 +29,7 @@ ALEMBIC_INI = os.path.join(os.path.dirname(__file__), 'alembic.test.ini')
 ANSIBLE_CFG = os.path.join(os.path.dirname(__file__), 'ansible.cfg')
 os.environ['ANSIBLE_CONFIG'] = ANSIBLE_CFG
 TEST_PLAYBOOK = 'tests/test_ansible_notify.yml'
+TEST_TRANSPORT = 'local'
 VERBOSITY = 0
 
 import ansiblereport
@@ -45,7 +46,6 @@ class TestModel(unittest.TestCase):
 
     def test_create_db(self):
         mgr = Manager(C.DEFAULT_DB_URI, debug=True)
-        mgr.session.commit()
         self.assertEqual(mgr.session.connection().engine.name, 'sqlite')
 
 class TestPlugin(unittest.TestCase):
@@ -56,7 +56,7 @@ class TestPlugin(unittest.TestCase):
         self.module_args = []
         self.limit = 1
         self.host_list = 'tests/hosts'
-        self.transport = 'local'
+        self.transport = TEST_TRANSPORT
         self.runner = None
         self.mgr = Manager(C.DEFAULT_DB_URI, debug=True)
 
@@ -79,9 +79,6 @@ class TestPlugin(unittest.TestCase):
                 callbacks=runner_cb,
                 )
         results = self.runner.run()
-        # when using nosetests this will only show up on failure
-        # which is pretty useful
-        print "RESULTS=%s" % results
         assert "localhost" in results['contacted']
         return results['contacted']['localhost']
 
@@ -105,23 +102,32 @@ class TestPlugin(unittest.TestCase):
         return result
 
     def test_module_callback(self):
+        ''' test runner module callback '''
         result = self._run_task()
         assert 'ping' in result
 
     def test_module_callback_data(self):
+        ''' test runner module callback data '''
         def fn(conn):
             args = {}
             args['module'] = [self.module_name]
-            results = AnsibleTask.find_tasks(conn,
-                    limit=self.limit, args=args)
+            results = AnsibleTask.find_tasks(conn, limit=self.limit, args=args)
             for r in results:
                 self.assertEqual(r.module, self.module_name)
         return self.mgr.run(fn)
 
     def test_module_notify(self):
         ''' test handling of notify tasks '''
+        # This greatly depends on what is defined in the playbook.
         results = self._run_playbook(TEST_PLAYBOOK)
         assert 'localhost' in results
+        def fn(conn):
+            args = {}
+            args['module'] = 'command'
+            results = AnsibleTask.find_tasks(conn, limit=self.limit, args=args)
+            for r in results:
+                self.assertEqual(r.data['invocation']['module_args'], 'uptime')
+        return self.mgr.run(fn)
 
     def test_process_concurrency(self):
         ''' fork N processes and test concurrent writes to db '''
