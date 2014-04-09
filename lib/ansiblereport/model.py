@@ -24,6 +24,7 @@ import operator
 import ansiblereport.constants as C
 
 from peewee import *
+from playhouse.proxy import Proxy
 
 import ansible.constants
 
@@ -42,54 +43,42 @@ class JSONField(CharField):
     def __repr__(self):
         return "JSONField(%s)" % self.value
 
-database_proxy = Proxy()
+DB_PROXY = Proxy()
 
 class BaseModel(Model):
     class Meta:
-        database = database_proxy
+        database = DB_PROXY
 
-class Task(BaseModel):
-    timestamp = DateTimeField(default=datetime.datetime.now)
-    hostname  = CharField()
-    module    = CharField()
-    result    = CharField()
-    changed   = BooleanField()
-    data      = JSONField()
-    user      = ForeignKeyField(User, related_name='tasks')
-    playbook  = ForeignKeyField(Playbook, related_name='tasks')
-    
-    class Meta:
-        db_table = 'task'
-        indexes = (
-            (('timestamp'), False),
-            (('hostname'), False),
-            (('module'), False),
-            (('changed'), False),
-            (('result'), False),
-        )
-
-class User(BaseModel):
-    username = CharField()
+class AnsibleUser(BaseModel):
+    username = CharField(index=True)
     euid     = CharField()
 
     class Meta:
         db_table = 'user'
-        indexes = ( (('username', 'euid'), True) )
 
-class Playbook(BaseModel):
-    path       = CharField()
-    uuid       = CharField()
-    user       = ForeignKeyField(User, related_name='playbooks')
-    connection = CharField()
-    starttime  = DateTimeField(default=datetime.datetime.now)
-    endtime    = DateTimeField(default=datetime.datetime.now)
+class AnsiblePlaybook(BaseModel):
+    path       = CharField(index=True, null=True)
+    uuid       = CharField(index=True)
+    user       = ForeignKeyField(AnsibleUser, related_name='playbooks')
+    connection = CharField(index=True)
     checksum   = CharField()
+    starttime  = DateTimeField(default=datetime.datetime.now, index=True)
+    endtime    = DateTimeField(default=datetime.datetime.now, index=True)
 
     class Meta:
         db_table = 'playbook'
-        indexes = (
-            (('path'), False),
-            (('uuid'), False),
-            (('connection'), False),
-            (('starttime'), False),
-        )
+        order_by = ('-endtime', '-starttime')
+
+class AnsibleTask(BaseModel):
+    hostname  = CharField(index=True)
+    module    = CharField(index=True, null=True)
+    result    = CharField(index=True)
+    changed   = BooleanField(index=True)
+    timestamp = DateTimeField(default=datetime.datetime.now, index=True)
+    user      = ForeignKeyField(AnsibleUser, related_name='tasks')
+    playbook  = ForeignKeyField(AnsiblePlaybook, related_name='tasks', null=True)
+    data      = JSONField()
+
+    class Meta:
+        db_table = 'task'
+        order_by = ('-timestamp',)
