@@ -18,53 +18,192 @@
 
 import ansiblereport.constants as C
 from ansiblereport.model import *
+from ansiblereport.utils import *
 
-
-import functools
-import random
-import time
-import sqlalchemy
 import os
 import sys
+import functools
+import logging
+import operator
+import peewee
+import random
+import time
+import urlparse
+import uuid
+
+peewee_logger = logging.getLogger('peewee')
+peewee_logger.addHandler(logging.StreamHandler())
 
 def _db_error_decorator(callable):
     @functools.wraps(callable)
     def _wrap(self, *args, **kwargs):
         try:
             return callable(self, *args, **kwargs)
+        except DatabaseError as e:
+            logging.warn("caught database error exception; will try to proceed")
         except Exception as e:
             raise
     return _wrap
 
+def _filter_query(clauses, cls, col, arg, timeop):
+    if not hasattr(cls, col):
+        logging.warn('%s does not have attribute %s', cls, col)
+        return sql
+    if isinstance(arg, list):
+        clauses.append(getattr(cls, col) << arg)
+    else:
+        if 'time' in col:
+            clauses.append(timeop(getattr(cls, col), arg))
+        else:
+            clauses.append(getattr(cls, col) == arg)
+    return clauses
+
 class Manager(object):
     ''' db manager object '''
 
-    def __init__(self, uri, alembic_ini=None, debug=False):
-        self.engine = create_engine(uri, echo=debug)
-        Base.metadata.create_all(self.engine)
-        if alembic_ini is not None:
-            # if we have an alembic.ini, stamp the db with the head revision
-            from alembic.config import Config
-            from alembic import command
-            alembic_cfg = Config(alembic_ini)
-            command.stamp(alembic_cfg, 'head')
-        Session = sessionmaker(bind=self.engine, autocommit=True)
-        self.session = Session()
+    def __init__(self, **kwargs):
+        ''' initialize manager object '''
+        engine = C.DEFAULT_DB_ENGINE
+        if 'engine' in kwargs:
+            engine = kwargs['engine']
+        name = C.DEFAULT_DB_NAME
+        if 'name' in kwargs:
+            name = kwargs['name']
+        user = C.DEFAULT_DB_USER
+        if 'user' in kwargs:
+            user = kwargs['user']
+        passwd = C.DEFAULT_DB_PASS
+        if 'passwd' in kwargs:
+            passwd = kwargs['passwd']
+
+        if 'sqlite' in engine:
+            database = SqliteDatabase(name, threadlocals=True)
+        elif 'postgres' in engine:
+            database = PostgresqlDatabase(name, user=user, password=password)
+        elif 'mysql' in engine:
+            database = MySQLDatabase(name, user=user, password=password)
+        else:
+            database = None
+        DB_PROXY.initialize(database)
+        self.database = database
+        try:
+            self.database.connect()
+        except OperationalError as e:
+            logging.error("failed to open database %s", name)
+            raise
+        self.create_tables()
+
+    def create_tables(self):
+        ''' create tables if they do not exist '''
+        AnsibleTask.create_table(fail_silently=True)
+        AnsibleUser.create_table(fail_silently=True)
+        AnsiblePlaybook.create_table(fail_silently=True)
 
     @_db_error_decorator
-    def save(self, model, nocommit=False):
+    def save(self, modinst, nocommit=False):
         ''' save an object '''
-        with self.session.begin(subtransactions=True):
-            self.session.add(model)
-            self.session.flush()
+        with self.database.transaction():
+            modinst.save()
 
+    @_db_error_decorator
     def get_or_create(self, model, **kwargs):
         ''' get or create an object '''
-        instance = self.session.query(model).filter_by(**kwargs).first()
-        if not instance:
+        try:
+            instance = model.get(**kwargs)
+        except AnsibleUser.DoesNotExist:
             instance = model(**kwargs)
             self.save(instance)
         return instance
+
+    def log_user(self):
+        (username, euid) = get_user()
+        if euid is None:
+            euid = username
+        return self.get_or_create(AnsibleUser, username=username, euid=euid)
+
+    def log_task(self, host, module, result, data, playbook=None):
+        changed = False
+        user = self.log_user()
+        if isinstance(data, dict) and 'changed' in data:
+            changed = data['changed']
+        task = AnsibleTask(
+            hostname=host,
+            module=module,
+            result=result,
+            data=data,
+            changed=changed,
+            user=user,
+            playbook=playbook
+        )
+        self.save(task)
+        return task
+
+    def log_play(self, path, connection, starttime=None):
+        user = self.log_user()
+        pb_uuid = uuid.uuid1()
+        checksum = git_version(path)
+        play = AnsiblePlaybook(
+            path=path,
+            uuid=pb_uuid,
+            checksum=checksum,
+            connection=connection,
+            user=user
+        )
+        if starttime is not None:
+            play.starttime = starttime
+        self.save(play)
+        return play
+
+    def find_tasks(self, args=None, limit=1, timeop=operator.gt, orderby=True):
+        clauses = []
+        if args is not None:
+            for col in args:
+                if hasattr(AnsibleTask, col):
+                    clauses = _filter_query(clauses, AnsibleTask, col, args[col], timeop)
+        results = AnsibleTask.select().where(*clauses)
+        if limit and limit != 0:
+            results.limit(limit)
+        return results
+
+    def find_playbooks(self, args=None, limit=1, timeop=operator.gt, orderby=True):
+        clauses = []
+        if args is not None:
+            for col in args:
+                if hasattr(AnsiblePlaybook, col):
+                    clauses = _filter_query(clauses, AnsiblePlaybook, col, args[col], timeop)
+        results = AnsiblePlaybook.select().where(*clauses)
+        if limit and limit != 0:
+            results.limit(limit)
+        return results
+
+    def get_last_n_playbooks(self, *args, **kwargs):
+        return self.find_playbooks(*args, **kwargs)
+
+    @classmethod
+    def get_task_stats(cls, task):
+        results = { task.hostname : {} }
+        for key in C.DEFAULT_TASK_RESULTS:
+            results[task.hostname][key.lower()] = 0
+            results[task.hostname][changed] = 0
+        if task.changed:
+            results[task.hostname][changed] += 1
+        results[task.hostname][task.result.lower()] += 1
+        return results
+
+    @classmethod
+    def get_playbook_stats(cls, playbook):
+        results = {}
+        for task in playbook.tasks:
+            if task.hostname not in results:
+                results[task.hostname] = {}
+                for key in C.DEFAULT_TASK_RESULTS:
+                    results[task.hostname][key.lower()] = 0
+                    results[task.hostname]['changed'] = 0
+            if task.changed:
+                results[task.hostname]['changed'] += 1
+            results[task.hostname][task.result.lower()] += 1
+        return results
+
 
     # The following is based on buildbot/master/buildbot/db/pool.py
     def run(self, callable, *args, **kwargs):
