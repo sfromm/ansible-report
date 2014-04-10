@@ -17,6 +17,7 @@
 # along with ansible-report.  If not, see <http://www.gnu.org/licenses/>.
 
 from ansiblereport.utils import *
+from ansiblereport.manager import *
 from ansiblereport.model import *
 import ansiblereport.constants as C
 
@@ -51,6 +52,7 @@ class OutputModule:
         ''' take list of events and report them to the screen '''
         self.report_stats = {}
         report_tasks = []
+        report_pbs = []
         if 'verbose' not in kwargs:
             kwargs['verbose'] = C.DEFAULT_VERBOSE
         if 'stats' not in kwargs:
@@ -62,25 +64,20 @@ class OutputModule:
                     if is_reportable_task(task, kwargs['verbose']):
                         tasks.append(task)
                 if tasks:
-                    stats = AnsiblePlaybook.get_playbook_stats(event)
-                    if kwargs['stats']:
-                        for host in stats:
-                            if host not in self.report_stats:
-                                self.report_stats[host] = stats[host]
-                            else:
-                                self._update_stats(host, stats[host])
-                    else:
+                    stats = Manager.get_playbook_stats(event)
+                    for host in stats:
+                        self._update_stats(host, stats[host])
+                    if not kwargs['stats']:
                         print format_playbook_report(event, tasks, stats)
             elif isinstance(event, AnsibleTask):
                 if is_reportable_task(event, kwargs['verbose']):
-                    if kwargs['stats']:
-                        stats = AnsibleTask.get_task_stats(event)
-                        self._update_stats(event.hostname, stats[event.hostname])
-                    else:
+                    stats = Manager.get_task_stats(event)
+                    self._update_stats(event.hostname, stats[event.hostname])
+                    if not kwargs['stats']:
                         report_tasks.append(event)
         if report_tasks:
             print format_task_report(report_tasks, embedded=False)
         if self.report_stats:
             totals = { 'total': self.report_stats.pop('total') }
-            print format_stats(self.report_stats, heading=False)
-            print format_stats(totals)
+            print format_stats(self.report_stats)
+            print format_stats(totals, heading=False)
