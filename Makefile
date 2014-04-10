@@ -32,7 +32,7 @@ RPMNVR = "$(NAME)-$(VERSION)-$(RPMRELEASE)$(RPMDIST)"
 
 all: clean python
 
-test:
+test: clean
 	PYTHONPATH=lib nosetests -d -v --with-coverage \
 		   --cover-erase --cover-package=ansiblereport
 
@@ -44,6 +44,8 @@ clean:
 	find . -type f -regex ".*\.py[co]$$" -delete
 	@echo "Cleaning up RPM build files"
 	rm -rf MANIFEST rpm-build
+	@echo "Cleaning up other odds and ends"
+	rm -f tests/test.sqlite
 
 python:
 	$(PYTHON) setup.py build
