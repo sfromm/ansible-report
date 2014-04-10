@@ -118,7 +118,7 @@ def format_stats(stats, heading=True):
     ''' format playbook stat data '''
     report = ''
     if heading:
-        report = format_heading('Summary')
+        report += format_heading('Summary', subheading=False)
     for host, stats in stats.items():
         summary = ''
         if 'ok' in stats:
@@ -146,9 +146,6 @@ def format_playbook_report(playbook, tasks, stats):
     if tasks:
         report += format_task_report(tasks)
 
-    if stats:
-        report += format_stats(stats)
-        report += "\n\n\n"
     return report
 
 def format_task_report(tasks, embedded=True):
