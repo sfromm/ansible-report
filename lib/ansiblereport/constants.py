@@ -38,7 +38,10 @@ DEFAULT_BACKOFF_START = get_config_value('backoff.start', None, 0.5)
 DEFAULT_BACKOFF_MULT = get_config_value('backoff.mult', None, 1.05)
 DEFAULT_BACKOFF_MAX = get_config_value('backoff.max', None, 60)
 
-DEFAULT_DB_URI = get_config_value('sqlalchemy.url', 'ANSIBLEREPORT_DB_URI', 'sqlite://')
+DEFAULT_DB_ENGINE = get_config_value('db.engine', 'ANSIBLEREPORT_DB_ENGINE', 'sqlite')
+DEFAULT_DB_NAME = get_config_value('db.name', 'ANSIBLEREPORT_DB_NAME', ':memory:')
+DEFAULT_DB_USER = get_config_value('db.user', 'ANSIBLEREPORT_DB_USER', 'ansible')
+DEFAULT_DB_PASS = get_config_value('db.passwd', 'ANSIBLEREPORT_DB_PASS', 'ansible')
 
 DEFAULT_STRFTIME = '%Y-%m-%d %H:%M:%S'
 DEFAULT_SHORT_STRFTIME = '%H:%M:%S'
