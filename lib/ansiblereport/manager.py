@@ -160,7 +160,9 @@ class Manager(object):
             for col in args:
                 if hasattr(AnsibleTask, col):
                     clauses = _filter_query(clauses, AnsibleTask, col, args[col], timeop)
-        results = AnsibleTask.select().where(*clauses)
+            results = AnsibleTask.select().where(*clauses)
+        else:
+            results = AnsibleTask.select()
         if limit and limit != 0:
             results.limit(limit)
         return results
@@ -171,7 +173,9 @@ class Manager(object):
             for col in args:
                 if hasattr(AnsiblePlaybook, col):
                     clauses = _filter_query(clauses, AnsiblePlaybook, col, args[col], timeop)
-        results = AnsiblePlaybook.select().where(*clauses)
+            results = AnsiblePlaybook.select().where(*clauses)
+        else:
+            results = AnsiblePlaybook.select()
         if limit and limit != 0:
             results.limit(limit)
         return results
