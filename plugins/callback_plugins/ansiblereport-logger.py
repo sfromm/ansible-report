@@ -19,30 +19,12 @@
 import sys
 import pkg_resources
 
-# fancy way to get the right version of sqlalchemy on rhel6
-# in case pkg_resources has already been loaded.
-def replace_dist(requirement):
-    try:
-        pkg_resources.require(requirement)
-    except pkg_resources.VersionConflict:
-        e = sys.exc_info()[1]
-        dist = e.args[0]
-        req = e.args[1]
-        if dist.key == req.key and not dist.location.endswith('.egg'):
-            del pkg_resources.working_set.by_key[dist.key]
-            # We assume there is no need to adjust sys.path
-            # and the associated pkg_resources.working_set.entries
-            return pkg_resources.require(requirement)
-replace_dist('SQLAlchemy >= 0.7')
 
 import datetime
 import os
-import uuid
 import socket
 import ansiblereport.constants as C
 from ansiblereport.manager import *
-from ansiblereport.model import *
-from ansiblereport.utils import *
 
 class CallbackModule(object):
     """
@@ -50,58 +32,35 @@ class CallbackModule(object):
     """
 
     def __init__(self):
-        self.uuid = uuid.uuid1()
         self.starttime = 0
-        self.endtime = 0
         self.playbook = None
-        self.mgr = Manager(C.DEFAULT_DB_URI)
-
-    def _log_user(self):
-        (username, euid) = get_user()
-        if euid is None:
-            euid = username
-        return self.mgr.get_or_create(AnsibleUser, username=username, euid=euid)
-
-    def _log_task(self, task):
-        ''' add result to database '''
-        user = self._log_user()
-        task.user = user
-        if self.playbook:
-            task.playbook = self.playbook
-        self.mgr.save(task)
-
-    def _log_play(self, play):
-        ''' add play to database '''
-        if play.user_id is None:
-            user = self._log_user()
-            play.user = user
-        self.mgr.save(play)
+        self.mgr = Manager()
 
     def on_any(self, *args, **kwargs):
         pass
 
     def runner_on_failed(self, host, res, ignore_errors=False):
         module = res['invocation']['module_name']
-        self._log_task(AnsibleTask(host, module, 'FAILED', res))
+        task = self.mgr.log_task(host, module, 'FAILED', res, self.playbook)
 
     def runner_on_ok(self, host, res):
         module = res['invocation']['module_name']
-        self._log_task(AnsibleTask(host, module, 'OK', res))
+        task = self.mgr.log_task(host, module, 'OK', res, self.playbook)
 
     def runner_on_error(self, host, msg):
         res = {}
-        self._log_task(AnsibleTask(host, None, 'ERROR', res))
+        task = self.mgr.log_task(host, None, 'ERROR', res, self.playbook)
 
     def runner_on_skipped(self, host, item=None):
         res = {}
-        self._log_task(AnsibleTask(host, None, 'SKIPPED', res))
+        task = self.mgr.log_task(host, None, 'SKIPPED', res, self.playbook)
 
     def runner_on_unreachable(self, host, res):
         if not isinstance(res, dict):
             res2 = res
             res = {}
             res['msg'] = res2
-        self._log_task(AnsibleTask(host, None, 'UNREACHABLE', res))
+        task = self.mgr.log_task(host, None, 'UNREACHABLE', res, self.playbook)
 
     def runner_on_no_hosts(self):
         pass
@@ -113,12 +72,12 @@ class CallbackModule(object):
         pass
 
     def runner_on_async_failed(self, host, res, jid):
-        self._log_task(AnsibleTask(host, None, 'ASYNC_FAILED', res))
+        task = self.mgr.log_task(host, None, 'ASYNC_FAILED', res, self.playbook)
 
     def playbook_on_start(self):
         # start of playbook, no attrs are set yet
         self.starttime = datetime.datetime.now()
-        self.playbook = AnsiblePlaybook(str(self.uuid))
+        self.playbook = None
 
     def playbook_on_notify(self, host, handler):
         ''' reports name of host and name of handler playbook will execute '''
@@ -149,13 +108,13 @@ class CallbackModule(object):
         play = getattr(self, 'play', None)
         if play is not None:
             path = os.path.abspath(os.path.join(
-                play.playbook.basedir, play.playbook.filename))
-            self.playbook.path = path
-            self.playbook.checksum = git_version(path)
-            self.playbook.connection = play.playbook.transport
-        self._log_play(self.playbook)
+                play.playbook.basedir,
+                os.path.basename(play.playbook.filename)
+            ))
+            self.playbook = self.mgr.log_play(
+                path, play.playbook.transport, self.starttime
+            )
 
     def playbook_on_stats(self, stats):
-        self.endtime = datetime.datetime.now()
-        self.playbook.endtime = self.endtime
-        self._log_play(self.playbook)
+        self.playbook.endtime = datetime.datetime.now()
+        self.mgr.save(self.playbook)
