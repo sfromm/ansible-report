@@ -33,7 +33,6 @@ from optparse import OptionGroup
 import ansiblereport
 import ansiblereport.constants as C
 from ansiblereport.manager import *
-from ansiblereport.model import *
 from ansiblereport.utils import *
 from ansiblereport.output_plugins import *
 
@@ -43,8 +42,7 @@ def report_tasks(options, mgr, args):
         age = parse_datetime_string(options.age)
         if age:
             args['timestamp'] = age
-    return AnsibleTask.find_tasks(mgr.session, limit=options.limit, 
-                                  args=args, intersection=options.intersection)
+    return mgr.find_tasks(limit=options.limit, args=args)
 
 def report_playbooks(options, mgr, args):
     ''' report on playbook information '''
@@ -52,8 +50,7 @@ def report_playbooks(options, mgr, args):
         age = parse_datetime_string(options.age)
         if age:
             args['starttime'] = age
-    return AnsiblePlaybook.get_last_n_playbooks(mgr.session, limit=options.limit, 
-                                                args=args, intersection=options.intersection)
+    return mgr.find_playbooks(limit=options.limit, args=args)
 
 def build_task_args(options):
     ''' return dict of search criteria for tasks '''
@@ -100,20 +97,14 @@ def prune_tasks(options, mgr, args):
         age = parse_datetime_string(options.age)
         if age:
             args['timestamp'] = age
-    return AnsibleTask.find_tasks(mgr.session, limit=options.limit, 
-                                  args=args, timeop=operator.le, 
-                                  intersection=options.intersection,
-                                  orderby=False)
+    return mgr.find_tasks(limit=options.limit, args=args, timeop=operator.le)
 
 def prune_playbooks(options, mgr, args):
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
             args['starttime'] = age
-    return AnsiblePlaybook.find_playbooks(mgr.session, limit=options.limit, 
-                                          args=args, timeop=operator.le, 
-                                          intersection=options.intersection,
-                                          orderby=False)
+    return mgr.find_playbooks(limit=options.limit, args=args, timeop=operator.le)
 
 def prune(options, mgr, kwargs):
     args = build_playbook_args(options)
@@ -208,7 +199,7 @@ def main(args):
             kwargs[key] = val
     kwargs['verbose'] = options.verbose
     kwargs['stats'] = options.stats
-    mgr = Manager(C.DEFAULT_DB_URI)
+    mgr = Manager()
     if options.prune:
         if not options.age:
             print "Please define an age to prune the database."
