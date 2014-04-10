@@ -19,7 +19,6 @@
 import json
 import datetime
 import logging
-import operator
 
 import ansiblereport.constants as C
 
@@ -61,7 +60,7 @@ class AnsiblePlaybook(BaseModel):
     uuid       = CharField(index=True)
     user       = ForeignKeyField(AnsibleUser, related_name='playbooks')
     connection = CharField(index=True)
-    checksum   = CharField()
+    checksum   = CharField(null=True)
     starttime  = DateTimeField(default=datetime.datetime.now, index=True)
     endtime    = DateTimeField(default=datetime.datetime.now, index=True)
 
@@ -73,11 +72,11 @@ class AnsibleTask(BaseModel):
     hostname  = CharField(index=True)
     module    = CharField(index=True, null=True)
     result    = CharField(index=True)
-    changed   = BooleanField(index=True)
+    changed   = BooleanField(index=True, default=False)
     timestamp = DateTimeField(default=datetime.datetime.now, index=True)
     user      = ForeignKeyField(AnsibleUser, related_name='tasks')
     playbook  = ForeignKeyField(AnsiblePlaybook, related_name='tasks', null=True)
-    data      = JSONField()
+    data      = JSONField(null=True)
 
     class Meta:
         db_table = 'task'
