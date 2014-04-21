@@ -62,7 +62,7 @@ def build_task_args(options):
     if options.module_name:
         args['module'] = options.module_name
     if options.result:
-        args['result'] = options.result
+        args['result'] = [x.upper() for x in options.result]
     return args
 
 def build_playbook_args(options):
@@ -97,36 +97,28 @@ def prune_tasks(options, mgr, args):
         age = parse_datetime_string(options.age)
         if age:
             args['timestamp'] = age
-    return mgr.find_tasks(limit=options.limit, args=args, timeop=operator.le)
+    count = mgr.rm_tasks(args=args)
+    if options.verbose:
+        print "Removed %s tasks from database" % count
 
 def prune_playbooks(options, mgr, args):
     if options.age:
         age = parse_datetime_string(options.age)
         if age:
             args['starttime'] = age
-    return mgr.find_playbooks(limit=options.limit, args=args, timeop=operator.le)
+    count = mgr.rm_playbooks(args=args)
+    if options.verbose:
+        print "Removed %s playbooks from database" % count
 
 def prune(options, mgr, kwargs):
     args = build_playbook_args(options)
-    try:
-        pbs = prune_playbooks(options, mgr, args)
-        count = pbs.delete()
-        if options.verbose:
-            print "Removed %s playbooks from database" % count
-        args = {}
-        args = build_task_args(options)
-        tasks = prune_tasks(options, mgr, args)
-        count = tasks.delete()
-        if options.verbose:
-            print "Removed %s tasks from database" % count
-        mgr.session.commit()
-        if 'sqlite' in mgr.engine.driver:
-            if options.verbose:
-                print "Running VACUUM"
-            mgr.engine.execute("VACUUM")
-    except Exception, e:
-        mgr.session.rollback()
-        print "Rolling back; failed to prune database: %s" % str(e)
+    pbs = prune_playbooks(options, mgr, args)
+    args = {}
+    args = build_task_args(options)
+    prune_tasks(options, mgr, args)
+    if options.verbose:
+        print "Running VACUUM"
+    mgr.vacuum()
 
 
 def version(prog):
@@ -183,7 +175,7 @@ def main(args):
     group.add_option('-l', '--limit', metavar='LIMIT',
                      default=C.DEFAULT_LIMIT,
                      help="limit reported events to N")
-    group.add_option('-&', '--intersection', action='store_true',
+    group.add_option('-&', '--and', action='store_true',
                      default=C.DEFAULT_INTERSECTION,
                      help="restrict results to the intersection of search criteria")
     group.add_option('--age', metavar='AGE',
