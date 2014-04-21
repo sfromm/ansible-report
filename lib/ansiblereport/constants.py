@@ -59,6 +59,8 @@ DEFAULT_SMTP_SUBJECT = get_config_value('smtp.subject', None, 'ansible-report')
 DEFAULT_SMTP_SENDER = get_config_value('smtp.sender', None, 'nobody@localhost')
 DEFAULT_SMTP_RECIPIENT = get_config_value('smtp.recipient', None, 'root@localhost')
 
+DEFAULT_MIGRATIONS_PATH = get_config_value('migrations_path', 'ANSIBLEREPORT_MIGRATIONS_PATH', '/usr/share/ansible-report/migrations')
+
 DEFAULT_OUTPUT = ['screen']
 DEFAULT_OUTPUT_PLUGIN_PATH = AC.shell_expand_path(
         get_config_value('output_plugins',
