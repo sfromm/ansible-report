@@ -39,9 +39,6 @@ class JSONField(CharField):
         except:
             return value
 
-    def __repr__(self):
-        return "JSONField(%s)" % self.value
-
 DB_PROXY = Proxy()
 
 class BaseModel(Model):
@@ -58,7 +55,7 @@ class AnsibleUser(BaseModel):
 class AnsiblePlaybook(BaseModel):
     path       = CharField(index=True, null=True)
     uuid       = CharField(index=True)
-    user       = ForeignKeyField(AnsibleUser, related_name='playbooks')
+    user       = ForeignKeyField(AnsibleUser, related_name='playbooks', on_delete='CASCADE')
     connection = CharField(index=True)
     checksum   = CharField(null=True)
     starttime  = DateTimeField(default=datetime.datetime.now, index=True)
@@ -74,8 +71,8 @@ class AnsibleTask(BaseModel):
     result    = CharField(index=True)
     changed   = BooleanField(index=True, default=False)
     timestamp = DateTimeField(default=datetime.datetime.now, index=True)
-    user      = ForeignKeyField(AnsibleUser, related_name='tasks')
-    playbook  = ForeignKeyField(AnsiblePlaybook, related_name='tasks', null=True)
+    user      = ForeignKeyField(AnsibleUser, related_name='tasks', on_delete='CASCADE')
+    playbook  = ForeignKeyField(AnsiblePlaybook, related_name='tasks', null=True, on_delete='CASCADE')
     data      = JSONField(null=True)
 
     class Meta:
