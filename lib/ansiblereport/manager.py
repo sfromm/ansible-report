@@ -52,7 +52,7 @@ def _filter_query(clauses, cls, col, arg, timeop):
     if isinstance(arg, list):
         clauses.append(getattr(cls, col) << arg)
     else:
-        if 'time' in col:
+        if isinstance(getattr(cls, col), peewee.DateTimeField):
             clauses.append(timeop(getattr(cls, col), arg))
         else:
             clauses.append(getattr(cls, col) == arg)
@@ -76,6 +76,9 @@ class Manager(object):
         if 'passwd' in kwargs:
             passwd = kwargs['passwd']
 
+        self.engine = engine
+        self.name = name
+
         if 'sqlite' in engine:
             database = SqliteDatabase(name, threadlocals=True)
         elif 'postgres' in engine:
@@ -98,6 +101,13 @@ class Manager(object):
         AnsibleTask.create_table(fail_silently=True)
         AnsibleUser.create_table(fail_silently=True)
         AnsiblePlaybook.create_table(fail_silently=True)
+
+    @_db_error_decorator
+    def execute(self, modquery, nocommit=False):
+        ''' execute a model query; returns number of rows affected '''
+        with self.database.transaction():
+            r = modquery.execute()
+        return r
 
     @_db_error_decorator
     def save(self, modinst, nocommit=False):
@@ -154,7 +164,7 @@ class Manager(object):
         self.save(play)
         return play
 
-    def find_tasks(self, args=None, limit=1, timeop=operator.gt, orderby=True):
+    def find_tasks(self, args=None, limit=1, timeop=operator.lt, orderby=True):
         clauses = []
         if args is not None:
             for col in args:
@@ -167,7 +177,7 @@ class Manager(object):
             results.limit(limit)
         return results
 
-    def find_playbooks(self, args=None, limit=1, timeop=operator.gt, orderby=True):
+    def find_playbooks(self, args=None, limit=1, timeop=operator.lt, orderby=True):
         clauses = []
         if args is not None:
             for col in args:
@@ -188,9 +198,9 @@ class Manager(object):
         results = { task.hostname : {} }
         for key in C.DEFAULT_TASK_RESULTS:
             results[task.hostname][key.lower()] = 0
-            results[task.hostname][changed] = 0
+            results[task.hostname]['changed'] = 0
         if task.changed:
-            results[task.hostname][changed] += 1
+            results[task.hostname]['changed'] += 1
         results[task.hostname][task.result.lower()] += 1
         return results
 
@@ -208,6 +218,30 @@ class Manager(object):
             results[task.hostname][task.result.lower()] += 1
         return results
 
+    def rm_tasks(self, args=None, timeop=operator.ge):
+        ''' remove tasks from database '''
+        if args is None:
+            return None
+        clauses = []
+        for col in args:
+            if hasattr(AnsibleTask, col):
+                clauses = _filter_query(clauses, AnsibleTask, col, args[col], timeop)
+        return self.execute( AnsibleTask.delete().where(*clauses) )
+
+    def rm_playbooks(self, args=None, timeop=operator.ge):
+        ''' remove playbooks from database '''
+        if args is None:
+            return None
+        clauses = []
+        for col in args:
+            if hasattr(AnsiblePlaybook, col):
+                clauses = _filter_query(clauses, AnsiblePlaybook, col, args[col], timeop)
+        return self.execute( AnsiblePlaybook.delete().where(*clauses) )
+
+    def vacuum(self):
+        ''' run vacuum '''
+        if self.engine in [ 'sqlite' ]:
+            self.database.execute_sql('VACUUM')
 
     # The following is based on buildbot/master/buildbot/db/pool.py
     def run(self, callable, *args, **kwargs):
