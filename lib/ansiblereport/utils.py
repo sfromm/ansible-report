@@ -35,6 +35,8 @@ try:
 except ImportError:
     from email.MIMEText import MIMEText
 
+VERBOSITY = 0
+
 def get_user():
     ''' return user information '''
     try:
@@ -259,3 +261,44 @@ def parse_datetime_string(arg):
     except:
         return None
     return date
+
+def increment_debug(option, opt, value, parser):
+    global VERBOSITY
+    VERBOSITY += 1
+
+def _log_formatter(program, loglevel):
+    ''' build a log formatter '''
+    parts = []
+    parts.append("%(asctime)s: " + program)
+    if loglevel == 'DEBUG':
+        parts.append(" %(module)s:%(lineno)s")
+    parts.append(" [%(levelname)s] %(message)s")
+    return logging.Formatter("".join(parts))
+
+def setup_logging(program='ansible-report', root_logger=None):
+    ''' set up logging '''
+    if root_logger is None:
+        root_logger = logging.getLogger("")
+    root_logger.setLevel(logging.NOTSET)
+
+    pw_logger = logging.getLogger('peewee')
+    pw_logger.setLevel(logging.WARN)
+
+    if VERBOSITY >= 3:
+        loglevel = 'DEBUG'
+        pw_logger.setLevel(logging.DEBUG)
+    elif VERBOSITY >= 2:
+        loglevel = 'DEBUG'
+    elif VERBOSITY >= 1:
+        loglevel = 'INFO'
+    else:
+        loglevel = 'WARN'
+
+    formatter = _log_formatter(program, loglevel)
+    numlevel = getattr(logging, loglevel.upper(), None)
+    if not isinstance(numlevel, int):
+        raise ValueError('Invalid log level: %s' % loglevel)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    stream_handler.setLevel(numlevel)
+    root_logger.addHandler(stream_handler)
