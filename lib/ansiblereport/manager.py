@@ -45,18 +45,40 @@ def _db_error_decorator(callable):
             raise
     return _wrap
 
-def _filter_query(clauses, cls, col, arg, timeop):
+def _build_clause(cls, col, val, timeop):
+    clause = None
     if not hasattr(cls, col):
-        logging.warn('%s does not have attribute %s', cls, col)
-        return sql
-    if isinstance(arg, list):
-        clauses.append(getattr(cls, col) << arg)
+        logging.warn('%s does not have the attribute %s', cls, col)
+        return clause
+    logging.debug("building filter clause %s:%s", col, val)
+    if isinstance(val, list):
+        clause = getattr(cls, col) << val
     else:
         if isinstance(getattr(cls, col), peewee.DateTimeField):
-            clauses.append(timeop(getattr(cls, col), arg))
+            clause = timeop(getattr(cls, col), val)
         else:
-            clauses.append(getattr(cls, col) == arg)
-    return clauses
+            clause = getattr(cls, col) == val
+    return clause
+
+def _filter_query(cls, args, **kwargs):
+    timeop = kwargs.get('timeop', operator.lt)
+    intersection = kwargs.get('intersection', C.DEFAULT_INTERSECTION)
+    clauses = []
+    qry = None
+    for col in args:
+        clause = _build_clause(cls, col, args[col], timeop)
+        if clause is None:
+            continue
+        clauses.append(clause)
+        if intersection:
+            if qry is None:
+                qry = cls.select().where(*clauses)
+            else:
+                qry = qry.where(*clauses)
+            clauses = []
+    if not intersection:
+        qry = cls.select().where(reduce(operator.or_, clauses))
+    return qry
 
 class Manager(object):
     ''' db manager object '''
@@ -164,31 +186,25 @@ class Manager(object):
         self.save(play)
         return play
 
-    def find_tasks(self, args=None, limit=1, timeop=operator.lt, orderby=True):
+    def find_tasks(self, args=None, limit=1, timeop=operator.ge):
         clauses = []
         if args is not None:
-            for col in args:
-                if hasattr(AnsibleTask, col):
-                    clauses = _filter_query(clauses, AnsibleTask, col, args[col], timeop)
-            results = AnsibleTask.select().where(*clauses)
+            qry = _filter_query(AnsibleTask, args, timeop=timeop)
         else:
-            results = AnsibleTask.select()
+            qry = AnsibleTask.select()
         if limit and limit != 0:
-            results.limit(limit)
-        return results
+            qry.limit(limit)
+        return qry
 
-    def find_playbooks(self, args=None, limit=1, timeop=operator.lt, orderby=True):
+    def find_playbooks(self, args=None, limit=1, timeop=operator.ge):
         clauses = []
         if args is not None:
-            for col in args:
-                if hasattr(AnsiblePlaybook, col):
-                    clauses = _filter_query(clauses, AnsiblePlaybook, col, args[col], timeop)
-            results = AnsiblePlaybook.select().where(*clauses)
+            qry = _filter_query(AnsiblePlaybook, args, timeop=timeop)
         else:
-            results = AnsiblePlaybook.select()
+            qry = AnsiblePlaybook.select()
         if limit and limit != 0:
-            results.limit(limit)
-        return results
+            qry.limit(limit)
+        return qry
 
     def get_last_n_playbooks(self, *args, **kwargs):
         return self.find_playbooks(*args, **kwargs)
@@ -218,24 +234,30 @@ class Manager(object):
             results[task.hostname][task.result.lower()] += 1
         return results
 
-    def rm_tasks(self, args=None, timeop=operator.ge):
+    def rm_tasks(self, args=None, timeop=operator.le):
         ''' remove tasks from database '''
         if args is None:
             return None
         clauses = []
         for col in args:
             if hasattr(AnsibleTask, col):
-                clauses = _filter_query(clauses, AnsibleTask, col, args[col], timeop)
+                c = _build_clause(AnsibleTask, col, args[col], timeop)
+                if c is None:
+                    continue
+                clauses.append(c)
         return self.execute( AnsibleTask.delete().where(*clauses) )
 
-    def rm_playbooks(self, args=None, timeop=operator.ge):
+    def rm_playbooks(self, args=None, timeop=operator.le):
         ''' remove playbooks from database '''
         if args is None:
             return None
         clauses = []
         for col in args:
             if hasattr(AnsiblePlaybook, col):
-                clauses = _filter_query(clauses, AnsiblePlaybook, col, args[col], timeop)
+                c = _build_clause(AnsiblePlaybook, col, args[col], timeop)
+                if c is None:
+                    continue
+                clauses.append(c)
         return self.execute( AnsiblePlaybook.delete().where(*clauses) )
 
     def vacuum(self):
