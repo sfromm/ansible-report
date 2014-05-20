@@ -1,6 +1,10 @@
 NAME = 'ansible-report'
 PYTHON=python
-
+MANPAGES := doc/man/man1/ansible-report.1 \
+	    doc/man/man3/ansiblereport.email.3 \
+	    doc/man/man3/ansiblereport.logstalgia.3 \
+	    doc/man/man3/ansiblereport.screen.3
+PANDOCMAN = pandoc -s -w man $< -o $@
 VERSION := $(shell grep __version lib/ansiblereport/__init__.py | sed -e 's|^.*= ||' -e "s|'||g" )
 
 # Get the branch information from git
@@ -46,6 +50,14 @@ clean:
 	rm -rf MANIFEST rpm-build
 	@echo "Cleaning up other odds and ends"
 	rm -f tests/test.sqlite
+
+%.3: %.3.md
+	$(PANDOCMAN)
+
+%.1: %.1.md
+	$(PANDOCMAN)
+
+doc: $(MANPAGES)
 
 python:
 	$(PYTHON) setup.py build
