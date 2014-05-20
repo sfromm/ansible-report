@@ -24,6 +24,7 @@ import pkg_resources
 import operator
 import os
 import json
+import logging
 import sys
 import json
 import smtplib
@@ -175,14 +176,13 @@ def main(args):
     group.add_option('-l', '--limit', metavar='LIMIT',
                      default=C.DEFAULT_LIMIT,
                      help="limit reported events to N")
-    group.add_option('-&', '--and', action='store_true',
-                     default=C.DEFAULT_INTERSECTION,
-                     help="restrict results to the intersection of search criteria")
     group.add_option('--age', metavar='AGE',
                      help='Restrict report to events no older '
                           'than this date string')
     parser.add_option_group(group)
+
     options, args = parser.parse_args()
+    setup_logging('ansiblereport')
     if not options.output:
         options.output = C.DEFAULT_OUTPUT
     if options.extra_args:
