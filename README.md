@@ -3,14 +3,13 @@ ansible-report
 
 Utility to log and report Ansible activity
 
-For information on *Ansible*, see http://ansible.cc.
+For information on *Ansible*, see http://www.ansible.com.
 
 Requirements
 ============
 
-* [Ansible](http://ansible.cc) >= 1.2
-* [SQLAlchemy](http://www.sqlalchemy.org/) >= 0.7
-* [Alembic](https://pypi.python.org/pypi/alembic)
+* [Ansible](http://www.ansible.com) >= 1.2
+* [Peewee](https://github.com/coleifer/peewee)
 * [python-dateutil](http://labix.org/python-dateutil)
 
 Example Output
@@ -21,7 +20,7 @@ Here is an example output:
     $ ansible-report -o screen -o email
     =================== Playbooks ====================
 
-    /var/lib/ansible/audit.yml: 
+    /var/lib/ansible/audit.yml:
             User: sfromm (sfromm)
       Start time: 2013-05-02 10:36:02
         End time: 2013-05-02 10:36:06
@@ -32,7 +31,7 @@ Here is an example output:
 
       -------- Summary --------
 
-      gandalf.example.net   : ok=3  changed=1  error=0  failed=0  skipped=0  unreachable=0  
+      gandalf.example.net   : ok=3  changed=1  error=0  failed=0  skipped=0  unreachable=0
 
 
 Callback Configuration
@@ -45,13 +44,14 @@ is typically:
 
     /usr/share/ansible_plugins/callback_plugins
 
-Alternatively, you can configure this directory via your _ansible.cfg_.
-After copying there, you need to configure the sqlalchemy url that will
-be used.  The following is an example that uses a *sqlite* file in the
-current directory:
+Alternatively, you can configure this directory via your
+_ansible.cfg_.  After copying there, you need to configure the
+database that will be used.  The following is an example that uses a
+*sqlite* file in the current directory:
 
     [ansiblereport]
-    sqlalchemy.url = sqlite:///ansbile.sqlite
+    db.engine = sqlite
+    db.name = test.sqlite
 
 For information on configuring sqlaclhemy, one starting point is
 [SQLAlchemy Engines](http://docs.sqlalchemy.org/en/latest/core/engines.html).  More information is available at http://docs.sqlalchemy.org/en/latest/.
@@ -86,19 +86,13 @@ Schema Migrations
 
 At this time, the database schema is not finalized.  While I will
 endeavor to provide a mechanism to keep up with schema changes, I make no
-guarantees at this time.  Migrations will be handled with
-[alembic](http://alembic.readthedocs.org/en/latest/index.html).  Please
-refer to _alembic_ documentation for how to handle migrations.  In the
-simple case, you should be able to do:
+guarantees at this time.  Migrations will be handled with *manage.py*
+and migration scripts in *migrations/*.  In the simple case, you should
+be able to do:
 
-    $ alembic upgrade head
-
-In order to configure alembic, you should update the _sqlalchemy.url_
-key in _alembic.ini_.
+    $ python manage.py -d up
 
 *Note*:  If you are using SQLite, please be aware that it has limited
-abilities to [alter tables] [1].  You should also refer to Alembic's
-[note] [2] on the subject.
+abilities to [alter tables] [1].
 
   [1]: http://www.sqlite.org/lang_altertable.html
-  [2]: https://bitbucket.org/zzzeek/alembic
