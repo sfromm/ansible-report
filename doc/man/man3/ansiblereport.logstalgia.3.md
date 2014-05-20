@@ -3,7 +3,7 @@ ANSIBLEREPORT.LOGSTALGIA(3)
 
 NAME
 ----
-logstalgia - Logstalgia output plugin for visualization
+logstalgia - Logstalgia output plugin for ansible-report visualization
 
 SYNOPSIS
 --------
@@ -13,7 +13,7 @@ DESCRIPTION
 -----------
 
 This will query the *ansible-report* database with the provided criteria
-and then pipe that into Logstalgia (http://code.google.com/p/logstalgia/) 
+and then pipe that into Logstalgia (http://code.google.com/p/logstalgia/)
 for visualization.  You must have Logstalgia already installed.  You can
 provide extra arguments to Logstalgia if needed.
 
@@ -30,7 +30,7 @@ example would be:
 This would allow you to post-process the PPM file with something like
 ffmpeg.  More details on recording videos can be found at:
 
-    http://code.google.com/p/logstalgia/wiki/Videos    
+    http://code.google.com/p/logstalgia/wiki/Videos
 
 COPYRIGHT
 ---------

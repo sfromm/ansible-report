@@ -1,0 +1,50 @@
+.TH  "" "" 
+.SH ANSIBLEREPORT.EMAIL(3)
+.SS NAME
+.PP
+email \- Email output plugin for ansible\-report
+.SS SYNOPSIS
+.PP
+ansible\-report \-o email [options]
+.SS DESCRIPTION
+.PP
+This will report the \f[I]ansible\-report\f[] query via email.
+Similar to the \f[I]screen\f[] plugin, the output is generally modeled
+on Logwatch (http://www.logwatch.org).
+This output plugin defaults to reporting what has changed or if the task
+result is \f[I]FAILED\f[], \f[I]ERROR\f[], or \f[I]UNREACHABLE\f[].
+For each reported task, this plugin reports the timestamp the task ran,
+whether a change occurred, the user the task ran as, the corresponding
+playbook, and arguments to the task.
+.PP
+The email subject, sender, recipient, and SMTP server are defined in
+\f[C]ansible.cfg\f[].
+There you can define the following (default values are also listed):
+.IP
+.nf
+\f[C]
+[ansiblereport]
+smtp.server\ \ \ \ =\ localhost
+smtp.recipient\ =\ root\@localhost
+smtp.sender\ \ \ \ =\ nobody\@localhost
+smtp.subject\ \ \ =\ ansible\-report
+\f[]
+.fi
+.SS OPTIONS
+.PP
+\f[I]\-v\f[], \f[I]\-\-verbose\f[]
+.PP
+Report on all tasks, including those that had no change or reported a
+task result of \f[I]OK\f[] or \f[I]SKIPPED\f[].
+.PP
+\f[I]\-\-stats\f[]
+.PP
+Only summarize the reported tasks with statistics of ok, changed, error,
+failed, skipped, and unreachable.
+Do not print details about any specific task.
+.SS COPYRIGHT
+.PP
+Copyright, 2014, University of Oregon
+.PP
+\f[I]ansible\-report\f[] is released under the terms of the GPLv3
+License.

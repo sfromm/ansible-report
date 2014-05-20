@@ -1,0 +1,93 @@
+.TH  "" "" 
+.SH ANSIBLE\-REPORT
+.SS NAME
+.PP
+ansible\-report \- Utility to report on tasks performed by
+\f[I]Ansible\f[]
+.SS SYNOPSIS
+.PP
+ansible\-report [options]
+.SS DESCRIPTION
+.PP
+\f[I]ansible\-report\f[] comes with a callback plugin that can be used
+to log \f[I]Ansible\[aq]s\f[] tasks to a database for later auditing.
+\f[I]ansible\-report\f[] itself is used to query the database for later
+reporting purposes.
+\f[I]ansible\-report\f[] uses output plugins to determine how to display
+the report data.
+This can be email, STDOUT, or something else of your choosing.
+.SS OPTIONS
+.PP
+\f[I]\-\-version\f[]
+.PP
+Display version number and exit.
+.PP
+\f[I]\-v\f[], \f[I]\-\-verbose\f[]
+.PP
+Be verbose in how \f[I]ansible\-report\f[] runs.
+Some output plugins may also use this to determine what tasks to report.
+.PP
+\f[I]\-o\f[], \f[I]\-\-output\f[]
+.PP
+Specify which output plugin to use.
+Default is \f[I]screen\f[].
+.PP
+\f[I]\-e\f[] EXTRA_ARGS, \f[I]\-\-extra\-args\f[]=EXTRA_ARGS
+.PP
+Set additional \f[I]key=value\f[] parameters that are passed to output
+plugins.
+See the respective man pages for plugins for what can be passed.
+.PP
+\f[I]\-\-prune\f[]
+.PP
+Prune old events from the database.
+Requires the \f[C]\-\-age\f[] option.
+.PP
+\f[I]\-\-stats\f[]
+.PP
+Only summarize the reportable data with statistics.
+Do not report details on individual tasks.
+.PP
+\f[I]\-l\f[] LIMIT, \f[I]\-\-limit\f[]=LIMIT
+.PP
+Limit reported events to LIMIT, an integer.
+The default can be defined in \f[C]ansible.cfg\f[].
+.PP
+\f[I]\-\-age\f[]=AGE
+.PP
+Query for tasks or playbooks that are no older than this date string.
+You can either specify a \f[I]datetime\f[] string or something like:
+\f[I]N seconds ago\f[], \f[I]N minutes ago\f[], \f[I]N hours ago\f[],
+\f[I]N days ago\f[], or \f[I]N weeks ago\f[].
+.PP
+\f[I]\-\-uid\f[]=UUID
+.PP
+Query for a playbook with the supplied UUID.
+The UUID is assigned by the callback plugin.
+.PP
+\f[I]\-\-path\f[]=PATH
+.PP
+Query for playbooks with the supplied PATH.
+.PP
+\f[I]\-\-connection\f[]=CONNECTION
+.PP
+Query for playbooks that used the supplied connection type.
+.PP
+\f[I]\-c\f[], \f[I]\-\-changed\f[]
+.PP
+Query for tasks that reported changed as part of their task result.
+.PP
+\f[I]\-m\f[] MODULE_NAME, \f[I]\-\-module\f[]=MODULE_NAME
+.PP
+Query for tasks that used the module MODULE_NAME.
+.PP
+\f[I]\-n\f[] HOSTNAME, \f[I]\-\-hostname\f[]=HOSTNAME
+.PP
+Query for tasks that ran on the host HOSTNAME.
+.PP
+\f[I]\-r\f[] RESULT, \f[I]\-\-result\f[]=RESULT
+.PP
+Query for task where the result matches the supplied RESULT.
+This must be a valid \f[I]Ansible\f[] task result string.
+This can be \f[I]OKAY\f[], \f[I]SKIPPED\f[], \f[I]FAILED\f[],
+\f[I]ERROR\f[], or \f[I]UNREACHABLE\f[].
