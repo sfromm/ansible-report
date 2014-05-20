@@ -18,5 +18,5 @@
 
 __name__ = 'ansible-report'
 __author__ = 'Stephen Fromm'
-__dbversion__ = 1
-__version__ = '0.1'
+__dbversion__ = 2
+__version__ = '0.2'
