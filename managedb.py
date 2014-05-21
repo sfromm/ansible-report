@@ -38,14 +38,14 @@ def _do_migration(model, path, direction):
     name, ext = os.path.splitext(os.path.basename(path))
 
     migration_exists = model.select().where(model.migration == name).limit(1).exists()
-    
+
     if migration_exists and direction == 'up':
         logging.warn("Migration %s already exists; skipping.", name)
         return False
     if not migration_exists and direction == 'down':
         logging.warn("Migration %s does not exist; skipping.", name)
         return False
-    
+
     logging.debug("Loading migration %s", name)
     try:
         (fp, pathname, descr) = imp.find_module(name, [dir_name])

@@ -13,7 +13,7 @@ def up():
         mgr.database.execute_sql("ALTER TABLE task ADD COLUMN changed SMALLINT default 0")
         logging.info("Updating changed column...")
         q = mgr.database.execute_sql("UPDATE task SET changed = 1 WHERE data LIKE '%changed\": true%'")
-        logging.info("Updated changed column for %s tasks", 
+        logging.info("Updated changed column for %s tasks",
                      mgr.database.rows_affected(q))
 
 def down():
