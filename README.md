@@ -53,9 +53,6 @@ database that will be used.  The following is an example that uses a
     db.engine = sqlite
     db.name = test.sqlite
 
-For information on configuring sqlaclhemy, one starting point is
-[SQLAlchemy Engines](http://docs.sqlalchemy.org/en/latest/core/engines.html).  More information is available at http://docs.sqlalchemy.org/en/latest/.
-
 Report Configuration
 ====================
 
