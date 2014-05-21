@@ -1,4 +1,4 @@
-Ansible-Report Changelog
+ansible-report Changelog
 ========================
 
 ## 0.2
