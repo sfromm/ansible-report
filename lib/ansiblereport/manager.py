@@ -212,9 +212,9 @@ class Manager(object):
     @classmethod
     def get_task_stats(cls, task):
         results = { task.hostname : {} }
+        results[task.hostname]['changed'] = 0
         for key in C.DEFAULT_TASK_RESULTS:
             results[task.hostname][key.lower()] = 0
-            results[task.hostname]['changed'] = 0
         if task.changed:
             results[task.hostname]['changed'] += 1
         results[task.hostname][task.result.lower()] += 1
@@ -226,9 +226,9 @@ class Manager(object):
         for task in playbook.tasks:
             if task.hostname not in results:
                 results[task.hostname] = {}
+                results[task.hostname]['changed'] = 0
                 for key in C.DEFAULT_TASK_RESULTS:
                     results[task.hostname][key.lower()] = 0
-                    results[task.hostname]['changed'] = 0
             if task.changed:
                 results[task.hostname]['changed'] += 1
             results[task.hostname][task.result.lower()] += 1
