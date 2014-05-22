@@ -1,5 +1,5 @@
 # Written by Stephen Fromm <sfromm@gmail.com>
-# (C) 2013 University of Oregon
+# (C) 2013-2014 University of Oregon
 
 # This file is part of ansible-report
 #
@@ -18,8 +18,10 @@
 
 import os
 import pwd
+import fcntl
 import smtplib
 import subprocess
+import tempfile
 import traceback
 import logging
 import dateutil.parser
@@ -34,8 +36,6 @@ try:
     from email.mime.text import MIMEText
 except ImportError:
     from email.MIMEText import MIMEText
-
-VERBOSITY = 0
 
 def get_user():
     ''' return user information '''
@@ -263,33 +263,34 @@ def parse_datetime_string(arg):
     return date
 
 def increment_debug(option, opt, value, parser):
-    global VERBOSITY
-    VERBOSITY += 1
+    C.DEFAULT_VERBOSE += 1
 
 def _log_formatter(program, loglevel):
     ''' build a log formatter '''
     parts = []
     parts.append("%(asctime)s: " + program)
     if loglevel == 'DEBUG':
-        parts.append(" %(module)s:%(lineno)s")
+        parts.append(" pid=%(process)d:thread=%(thread)d:%(module)s:%(lineno)s")
     parts.append(" [%(levelname)s] %(message)s")
     return logging.Formatter("".join(parts))
 
 def setup_logging(program='ansible-report', root_logger=None):
     ''' set up logging '''
+    logfile = os.path.join(pwd.getpwuid(os.getuid())[5], ".ansiblereport.log")
     if root_logger is None:
         root_logger = logging.getLogger("")
     root_logger.setLevel(logging.NOTSET)
 
     pw_logger = logging.getLogger('peewee')
     pw_logger.setLevel(logging.WARN)
+    pw_handler = pw_logger.handlers[0]
 
-    if VERBOSITY >= 3:
+    if C.DEFAULT_VERBOSE >= 3:
         loglevel = 'DEBUG'
         pw_logger.setLevel(logging.DEBUG)
-    elif VERBOSITY >= 2:
+    elif C.DEFAULT_VERBOSE >= 2:
         loglevel = 'DEBUG'
-    elif VERBOSITY >= 1:
+    elif C.DEFAULT_VERBOSE >= 1:
         loglevel = 'INFO'
     else:
         loglevel = 'WARN'
@@ -298,7 +299,48 @@ def setup_logging(program='ansible-report', root_logger=None):
     numlevel = getattr(logging, loglevel.upper(), None)
     if not isinstance(numlevel, int):
         raise ValueError('Invalid log level: %s' % loglevel)
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
-    stream_handler.setLevel(numlevel)
-    root_logger.addHandler(stream_handler)
+    handler = logging.FileHandler(logfile)
+    handler.setFormatter(formatter)
+    handler.setLevel(numlevel)
+    root_logger.addHandler(handler)
+    # remove streamhandler from peewee logger
+    pw_logger.addHandler(handler)
+    pw_logger.removeHandler(pw_handler)
+
+class Lock:
+    ''' A semaphore for inter-process signaling. '''
+
+    def __init__(self, path=None):
+        ''' create lockfile for a writer '''
+        tempdir = tempfile.gettempdir()
+        if path is None:
+            path = os.path.join(tempdir, ".ansiblereport-lock.%s" % os.getuid())
+        self.path = path
+        self.lockfile = open(path, 'w')
+        # from ansible callbacks.py:
+        # set FD_CLOEXEC on file descriptor
+        # so that we don't leak file descriptor later
+        lockfd = self.lockfile.fileno()
+        old_flags = fcntl.fcntl(lockfd, fcntl.F_GETFD)
+        fcntl.fcntl(lockfd, fcntl.F_SETFD, old_flags | fcntl.FD_CLOEXEC)
+
+    def acquire(self):
+        ''' acquire the lock; will block until acquired '''
+        try:
+            logging.debug("locking file %s", self.path)
+            fcntl.flock(self.lockfile, fcntl.LOCK_EX)
+            logging.debug("gained lock on file %s", self.path)
+        except OSError:
+            pass
+
+    def release(self):
+        ''' release lock '''
+        try:
+            logging.debug("unlocking file %s", self.path)
+            fcntl.flock(self.lockfile, fcntl.LOCK_UN)
+        except OSError:
+            pass
+
+    def __del__(self):
+        ''' close file handle '''
+        self.lockfile.close()
