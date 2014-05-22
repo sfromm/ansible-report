@@ -4,7 +4,6 @@ import os
 import sys
 import glob
 
-__requires__ = ['SQLAlchemy >= 0.7']
 import pkg_resources
 
 sys.path.append( os.path.join(
@@ -45,5 +44,5 @@ setup(name=__name__,
       packages=['ansiblereport'],
       scripts=['bin/ansible-report'],
       data_files=data_files,
-      install_requires=['SQLAlchemy>=0.6', 'alembic', 'dateutil'],
+      install_requires=['peewee', 'dateutil'],
 )

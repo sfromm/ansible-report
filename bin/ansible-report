@@ -18,9 +18,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA.
 
-__requires__ = ['SQLAlchemy >= 0.7']
-import pkg_resources
-
 import operator
 import os
 import json

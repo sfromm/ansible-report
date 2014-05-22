@@ -24,7 +24,6 @@ import os
 import multiprocessing
 
 MAX_WORKERS = 75
-ALEMBIC_INI = os.path.join(os.path.dirname(__file__), 'alembic.test.ini')
 ANSIBLE_CFG = os.path.join(os.path.dirname(__file__), 'ansible.cfg')
 os.environ['ANSIBLE_CONFIG'] = ANSIBLE_CFG
 TEST_HOST_LIST = 'tests/hosts'
