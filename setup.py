@@ -26,7 +26,13 @@ for path in glob.glob(os.path.join('plugins', 'output_plugins', '*.py')):
     plugins.append(path)
 data_files.append((OUTPUT_PLUGIN_PATH, plugins))
 
-print "output plugins=%s" % data_files
+migrations = []
+MIGRATIONS_PATH = 'share/ansible-report/migrations'
+for path in glob.glob(os.path.join('migrations', '*.py')):
+    migrations.append(path)
+data_files.append((MIGRATIONS_PATH, migrations))
+
+data_files.append(('share/ansible-report', ['managedb.py']))
 
 setup(name=__name__,
       version=__version__,
