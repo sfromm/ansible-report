@@ -96,7 +96,7 @@ def migratedb(mgr, migration_path, direction, migration=None):
 def main(args):
     usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage)
-    parser.add_option('-m', '--migrations', 
+    parser.add_option('-m', '--migrations',
                       default=C.DEFAULT_MIGRATIONS_PATH,
                       help='Directory of migrations')
     parser.add_option('-d', '--direction', choices=['up', 'down'],
@@ -104,8 +104,8 @@ def main(args):
     parser.add_option('-M', '--migration',
                       help='Only migrate up/down to this version')
     parser.add_option('-v', '--verbose', action="callback",
-                      callback=increment_debug, 
-                      default=False, help='Be verbose.  Use more than once to increase verbosity')
+                      callback=increment_debug, default=C.DEFAULT_VERBOSE,
+                      help='Be verbose.  Use more than once to increase verbosity')
     options, args = parser.parse_args()
     setup_logging('managedb')
     mgr = Manager()

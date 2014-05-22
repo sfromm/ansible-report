@@ -29,8 +29,8 @@ def get_config_value(key, env_var, default):
 
 DEFAULT_SECTION = 'ansiblereport'
 
-DEFAULT_VERBOSE = False
 DEFAULT_STATS = False
+DEFAULT_VERBOSE = get_config_value('verbose', 'ANSIBLEREPORT_VERBOSE', 0)
 DEFAULT_INTERSECTION = get_config_value('intersection', 'ANSIBLEREPORT_INTERSECTION', False)
 DEFAULT_LIMIT = get_config_value('limit', 'ANSIBLEREPORT_LIMIT', 0)
 

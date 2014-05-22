@@ -12,7 +12,6 @@ os.environ['ANSIBLE_CONFIG'] = ANSIBLE_CFG
 TEST_HOST_LIST = 'tests/hosts'
 TEST_PLAYBOOK = 'tests/test_playbook.yml'
 TEST_TRANSPORT = 'local'
-VERBOSITY = 0
 
 import ansiblereport
 import ansiblereport.constants as C
@@ -27,7 +26,7 @@ import ansible.callbacks as ans_callbacks
 def _run_task(module_name='ping', module_args=[]):
     user = getpass.getuser()
     stats = ans_callbacks.AggregateStats()
-    runner_cb = ans_callbacks.PlaybookRunnerCallbacks(stats, verbose=VERBOSITY)
+    runner_cb = ans_callbacks.PlaybookRunnerCallbacks(stats, verbose=C.DEFAULT_VERBOSE)
     runner = ans_runner.Runner(
                 module_name=module_name,
                 module_args=' '.join(module_args),
@@ -54,11 +53,12 @@ class TestModel(unittest.TestCase):
         self.limit = 1
         self.host_list = 'tests/hosts'
         self.runner = None
+        setup_logging('TestModel')
 
     def _run_playbook(self, playbook):
         stats = ans_callbacks.AggregateStats()
-        playbook_cb = ans_callbacks.PlaybookCallbacks(verbose=VERBOSITY)
-        playbook_runner_cb = ans_callbacks.PlaybookRunnerCallbacks(stats, verbose=VERBOSITY)
+        playbook_cb = ans_callbacks.PlaybookCallbacks(verbose=C.DEFAULT_VERBOSE)
+        playbook_runner_cb = ans_callbacks.PlaybookRunnerCallbacks(stats, verbose=C.DEFAULT_VERBOSE)
         self.playbook = ans_playbook.PlayBook(
             playbook=playbook,
             host_list=TEST_HOST_LIST,
@@ -94,6 +94,7 @@ class TestPlugin(unittest.TestCase):
         self.mgr = Manager()
         self.user = getpass.getuser()
         self.module_name = 'ping'
+        setup_logging('TestPlugin')
 
     def test_check_playbook_data(self):
         ''' test playbook data is present '''

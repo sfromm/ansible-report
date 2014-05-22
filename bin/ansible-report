@@ -130,8 +130,9 @@ def main(args):
     kwargs = {}
     usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage, version=version("%prog"))
-    parser.add_option('-v', '--verbose', action='store_true',
-                      default=C.DEFAULT_VERBOSE, help="Be verbose")
+    parser.add_option('-v', '--verbose', action="callback",
+                      callback=increment_debug, default=C.DEFAULT_VERBOSE,
+                      help='Be verbose.  Use more than once to increase verbosity')
     parser.add_option('-o', '--output', metavar='OUTPUT',
                       action='append',
                       help='Output destination for report. '
@@ -182,14 +183,14 @@ def main(args):
     parser.add_option_group(group)
 
     options, args = parser.parse_args()
-    setup_logging('ansiblereport')
+    setup_logging()
     if not options.output:
         options.output = C.DEFAULT_OUTPUT
     if options.extra_args:
         for arg in options.extra_args:
             (key, val) = arg.split('=', 1)
             kwargs[key] = val
-    kwargs['verbose'] = options.verbose
+    kwargs['verbose'] = C.DEFAULT_VERBOSE
     kwargs['stats'] = options.stats
     mgr = Manager()
     if options.prune:

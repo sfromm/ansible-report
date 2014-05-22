@@ -58,6 +58,7 @@ class OutputModule:
             kwargs['verbose'] = C.DEFAULT_VERBOSE
         if 'stats' not in kwargs:
             kwargs['stats'] = C.DEFAULT_STATS
+        kwargs['verbose'] = bool(kwargs['verbose'])
         for event in events:
             tasks = []
             if isinstance(event, AnsiblePlaybook):
