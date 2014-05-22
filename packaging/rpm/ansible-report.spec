@@ -39,7 +39,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/ansible-report
 %{_datadir}/ansible_plugins/callback_plugins/ansiblereport-logger.py
 %{_datadir}/ansible-report/plugins/*.py
-%{_datadir}/ansible-report/managedb.py
+%{_datadir}/ansible-report/*.py
 %{_datadir}/ansible-report/migrations/*.py
 %doc README.md COPYING
 

@@ -31,7 +31,7 @@ for path in glob.glob(os.path.join('migrations', '*.py')):
     migrations.append(path)
 data_files.append((MIGRATIONS_PATH, migrations))
 
-data_files.append(('share/ansible-report', ['managedb.py']))
+data_files.append(('share/ansible-report', ['managedb.py', 'createdb.py']))
 
 setup(name=__name__,
       version=__version__,
