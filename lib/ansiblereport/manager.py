@@ -35,12 +35,26 @@ peewee_logger = logging.getLogger('peewee')
 peewee_logger.addHandler(logging.StreamHandler())
 
 def _db_error_decorator(callable):
+    '''
+    decorator for catching errors when interacting with database.
+    the ansible callbacks are run from multiple processes.  to deal
+    with possible lock contention from these writers and sqlite, this
+    uses a semaphore to control access to the database.  this should
+    not be necessary with databases such as mysql or postgresql.
+    '''
     @functools.wraps(callable)
     def _wrap(self, *args, **kwargs):
         try:
-            return callable(self, *args, **kwargs)
+            lock = None
+            if hasattr(self, 'engine') and self.engine == 'sqlite':
+                lock = Lock()
+                lock.acquire()
+            result = callable(self, *args, **kwargs)
+            if lock:
+                lock.release()
+            return result
         except DatabaseError as e:
-            logging.warn("caught database error exception; will try to proceed")
+            logging.warn("caught database error exception; will try to proceed: %s", str(e))
         except Exception as e:
             raise
     return _wrap
@@ -127,24 +141,24 @@ class Manager(object):
     @_db_error_decorator
     def execute(self, modquery, nocommit=False):
         ''' execute a model query; returns number of rows affected '''
-        with self.database.transaction():
-            r = modquery.execute()
+        r = modquery.execute()
         return r
 
     @_db_error_decorator
     def save(self, modinst, nocommit=False):
         ''' save an object '''
-        with self.database.transaction():
-            modinst.save()
+        modinst.save()
 
     @_db_error_decorator
     def get_or_create(self, model, **kwargs):
         ''' get or create an object '''
         try:
+            logging.debug("checking if user '%s' already exists", kwargs['username'])
             instance = model.get(**kwargs)
         except AnsibleUser.DoesNotExist:
+            logging.debug("user '%s' does not exist; creating", kwargs['username'])
             instance = model(**kwargs)
-            self.save(instance)
+            instance.save()
         return instance
 
     def log_user(self):
@@ -266,6 +280,7 @@ class Manager(object):
             self.database.execute_sql('VACUUM')
 
     # The following is based on buildbot/master/buildbot/db/pool.py
+    # DEPRECATED
     def run(self, callable, *args, **kwargs):
         backoff = C.DEFAULT_BACKOFF_START
         start = time.time()
