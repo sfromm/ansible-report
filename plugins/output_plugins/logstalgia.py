@@ -90,6 +90,9 @@ class OutputModule:
         modules = []
         hosts = []
         category = {}
+        if 'verbose' not in kwargs:
+            kwargs['verbose'] = C.DEFAULT_VERBOSE
+        kwargs['verbose'] = bool(kwargs['verbose'])
         for event in events:
             if isinstance(event, AnsiblePlaybook):
                 for task in event.tasks:
