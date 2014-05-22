@@ -278,39 +278,3 @@ class Manager(object):
         ''' run vacuum '''
         if self.engine in [ 'sqlite' ]:
             self.database.execute_sql('VACUUM')
-
-    # The following is based on buildbot/master/buildbot/db/pool.py
-    # DEPRECATED
-    def run(self, callable, *args, **kwargs):
-        backoff = C.DEFAULT_BACKOFF_START
-        start = time.time()
-        while True:
-            try:
-                try:
-                    rv = callable(self.session, *args, **kwargs)
-                    break
-                except sqlalchemy.exc.OperationalError as e:
-                    text = e.orig.args[0]
-                    if not isinstance(text, basestring):
-                        raise
-                    if "Lost connection" in text \
-                        or "database is locked" in text:
-
-                        # raise exception if have retried too often
-                        elapsed = time.time() - start
-                        if elapsed > C.DEFAULT_BACKOFF_MAX:
-                            raise
-
-                        # sleep and retry
-                        time.sleep(backoff)
-                        backoff *= C.DEFAULT_BACKOFF_MULT
-                        # try again
-                        continue
-                    else:
-                        raise
-                except Exception as e:
-                    raise
-            finally:
-                pass
-        return rv
-
