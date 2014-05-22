@@ -11,20 +11,13 @@ Source0:	%{name}-%{version}.tar.gz
 
 BuildArch:  noarch
 BuildRequires:	python-devel
-Requires:   python-alembic
 Requires:   python-dateutil
+Requires:   python-peewee
 Requires:   ansible
-%if ( 0%{?rhel} && 0%{?rhel} == 6 )
-BuildRequires:  python-sqlalchemy0.7
-Requires:	python-sqlalchemy0.7
-%else
-BuildRequires:  python-sqlalchemy > 0.5
-Requires:   python-sqlalchemy > 0.5
-%endif
 Provides: ansiblereport
 
 %description
-A utility to record events in a database via ansible callbacks and then 
+A utility to record events in a database via ansible callbacks and then
 report on them at a later date.
 
 %prep
