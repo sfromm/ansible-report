@@ -35,6 +35,8 @@ class CallbackModule(object):
         self.starttime = 0
         self.playbook = None
         self.mgr = Manager()
+        ident = os.path.splitext(os.path.basename(__file__))[0]
+        setup_logging(ident)
 
     def on_any(self, *args, **kwargs):
         pass
