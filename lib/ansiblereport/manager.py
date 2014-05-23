@@ -47,7 +47,8 @@ def _db_error_decorator(callable):
         try:
             lock = None
             if hasattr(self, 'engine') and self.engine == 'sqlite':
-                lock = Lock()
+                path = os.path.join(os.path.dirname(self.name), ".ansiblereport-lock")
+                lock = Lock(path)
                 lock.acquire()
             result = callable(self, *args, **kwargs)
             if lock:
