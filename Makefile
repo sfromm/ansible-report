@@ -70,7 +70,7 @@ sdist: clean
 
 pep8:
 	@echo "Running PEP8 compliance tests"
-	-pep8 -r --ignore=E501,E202,E302,E303 lib/ bin/ plugins/
+	-pep8 -r --ignore=E501,E201,E202,E221,E302,E303 lib/ bin/ plugins/ migrations managedb.py createdb.py
 
 rpmcommon: sdist
 	@echo "make rpmcommon"

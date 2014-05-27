@@ -102,12 +102,12 @@ def format_task_brief(task, embedded=True):
         strftime = C.DEFAULT_STRFTIME
     if task.module is None:
         return "{0} {1}: {2}".format(
-                task.timestamp.strftime(strftime),
-                task.hostname, task.result)
+            task.timestamp.strftime(strftime),
+            task.hostname, task.result)
     else:
         return "{0} {1} {2}: {3}".format(
-                task.timestamp.strftime(strftime),
-                task.hostname, task.module, task.result)
+            task.timestamp.strftime(strftime),
+            task.hostname, task.module, task.result)
 
 def format_heading(title, subheading=True):
     ''' format a heading in a report '''
@@ -139,11 +139,12 @@ def format_playbook_report(playbook, tasks, stats):
     report += "  {0:>10}: {1}\n".format('Path', playbook.path)
     report += "  {0:>10}: {1}\n".format('UUID', playbook.uuid)
     report += "  {0:>10}: {1} ({2})\n".format('User',
-            playbook.user.username, playbook.user.euid)
+                                              playbook.user.username,
+                                              playbook.user.euid)
     report += "  {0:>10}: {1}\n".format('Start time',
-            playbook.starttime.strftime(C.DEFAULT_STRFTIME))
+                                        playbook.starttime.strftime(C.DEFAULT_STRFTIME))
     report += "  {0:>10}: {1}\n".format('End time',
-            playbook.endtime.strftime(C.DEFAULT_STRFTIME))
+                                        playbook.endtime.strftime(C.DEFAULT_STRFTIME))
 
     if tasks:
         report += format_task_report(tasks)
@@ -212,8 +213,8 @@ def is_reportable_task(task, verbose=False, embedded=True):
     return False
 
 def email_report(report_data,
-        smtp_subject=C.DEFAULT_SMTP_SUBJECT,
-        smtp_recipient=C.DEFAULT_SMTP_RECIPIENT):
+                 smtp_subject=C.DEFAULT_SMTP_SUBJECT,
+                 smtp_recipient=C.DEFAULT_SMTP_RECIPIENT):
     ''' pull together all the necessary details and send email report '''
     smtp_server = C.DEFAULT_SMTP_SERVER
     smtp_sender = C.DEFAULT_SMTP_SENDER

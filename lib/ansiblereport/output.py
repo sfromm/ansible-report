@@ -17,14 +17,14 @@
 # along with ansible-report.  If not, see <http://www.gnu.org/licenses/>.
 
 class OutputModule:
-    ''' 
+    '''
     A generic plugin that all output plugins should implement
-    for ansible-report to recognize them.  It should implement the 
+    for ansible-report to recognize them.  It should implement the
     following:
 
     name        Attribute with the name of the plugin
     do_report   Method that will take a list of events and report
-                them in some manner.  It also takes an optional 
+                them in some manner.  It also takes an optional
                 set of keyword arguments
     '''
     name = 'generic'

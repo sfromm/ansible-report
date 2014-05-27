@@ -226,7 +226,7 @@ class Manager(object):
 
     @classmethod
     def get_task_stats(cls, task):
-        results = { task.hostname : {} }
+        results = { task.hostname: {} }
         results[task.hostname]['changed'] = 0
         for key in C.DEFAULT_TASK_RESULTS:
             results[task.hostname][key.lower()] = 0
@@ -260,7 +260,7 @@ class Manager(object):
                 if c is None:
                     continue
                 clauses.append(c)
-        return self.execute( AnsibleTask.delete().where(*clauses) )
+        return self.execute(AnsibleTask.delete().where(*clauses))
 
     def rm_playbooks(self, args=None, timeop=operator.le):
         ''' remove playbooks from database '''
@@ -273,9 +273,9 @@ class Manager(object):
                 if c is None:
                     continue
                 clauses.append(c)
-        return self.execute( AnsiblePlaybook.delete().where(*clauses) )
+        return self.execute(AnsiblePlaybook.delete().where(*clauses))
 
     def vacuum(self):
         ''' run vacuum '''
-        if self.engine in [ 'sqlite' ]:
+        if self.engine in ['sqlite']:
             self.database.execute_sql('VACUUM')
