@@ -8,4 +8,7 @@ alembic.ini
 MANIFEST
 dist
 rpm-build
-tests/tests/*
+tests/ansiblereport.log
+tests/.ansiblereport-lock
+tests/test.sqlite
+tests/myfetch/
