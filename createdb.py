@@ -26,7 +26,7 @@ def main(args):
     usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage)
     parser.add_option('-v', '--verbose', action="callback",
-                      callback=increment_debug, default=C.DEFAULT_VERBOSE,
+                      callback=increment_debug, default=C.DEFAULT_LOGLEVEL,
                       help='Be verbose.  Use more than once to increase verbosity')
     options, args = parser.parse_args()
     setup_logging('createdb')

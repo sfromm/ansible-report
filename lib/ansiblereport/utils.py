@@ -263,7 +263,7 @@ def parse_datetime_string(arg):
     return date
 
 def increment_debug(option, opt, value, parser):
-    C.DEFAULT_VERBOSE += 1
+    C.DEFAULT_LOGLEVEL += 1
 
 def _log_formatter(program, loglevel):
     ''' build a log formatter '''
@@ -285,12 +285,12 @@ def setup_logging(program='ansible-report', root_logger=None):
     pw_logger.setLevel(logging.WARN)
     pw_handler = pw_logger.handlers[0]
 
-    if C.DEFAULT_VERBOSE >= 3:
+    if C.DEFAULT_LOGLEVEL >= 3:
         loglevel = 'DEBUG'
         pw_logger.setLevel(logging.DEBUG)
-    elif C.DEFAULT_VERBOSE >= 2:
+    elif C.DEFAULT_LOGLEVEL >= 2:
         loglevel = 'DEBUG'
-    elif C.DEFAULT_VERBOSE >= 1:
+    elif C.DEFAULT_LOGLEVEL >= 1:
         loglevel = 'INFO'
     else:
         loglevel = 'WARN'

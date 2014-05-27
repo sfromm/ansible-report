@@ -128,7 +128,7 @@ def main(args):
     usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage, version=version("%prog"))
     parser.add_option('-v', '--verbose', action="callback",
-                      callback=increment_debug, default=C.DEFAULT_VERBOSE,
+                      callback=increment_debug, default=C.DEFAULT_LOGLEVEL,
                       help='Be verbose.  Use more than once to increase verbosity')
     parser.add_option('-o', '--output', metavar='OUTPUT',
                       action='append',
@@ -187,7 +187,7 @@ def main(args):
         for arg in options.extra_args:
             (key, val) = arg.split('=', 1)
             kwargs[key] = val
-    kwargs['verbose'] = C.DEFAULT_VERBOSE
+    kwargs['verbose'] = C.DEFAULT_LOGLEVEL
     kwargs['stats'] = options.stats
     mgr = Manager()
     if options.prune:

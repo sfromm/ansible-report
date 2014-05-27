@@ -55,7 +55,7 @@ class OutputModule:
         report = ''
         report_tasks = []
         if 'verbose' not in kwargs:
-            kwargs['verbose'] = C.DEFAULT_VERBOSE
+            kwargs['verbose'] = C.DEFAULT_LOGLEVEL
         if 'stats' not in kwargs:
             kwargs['stats'] = C.DEFAULT_STATS
         kwargs['verbose'] = bool(kwargs['verbose'])

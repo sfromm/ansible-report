@@ -122,7 +122,7 @@ def main(args):
     parser.add_option('-M', '--migration',
                       help='Only migrate up/down to this version')
     parser.add_option('-v', '--verbose', action="callback",
-                      callback=increment_debug, default=C.DEFAULT_VERBOSE,
+                      callback=increment_debug, default=C.DEFAULT_LOGLEVEL,
                       help='Be verbose.  Use more than once to increase verbosity')
     options, args = parser.parse_args()
     setup_logging('managedb')

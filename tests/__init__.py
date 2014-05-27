@@ -43,7 +43,7 @@ import ansible.callbacks as ans_callbacks
 def _run_task(module_name='ping', module_args=[]):
     user = getpass.getuser()
     stats = ans_callbacks.AggregateStats()
-    runner_cb = ans_callbacks.PlaybookRunnerCallbacks(stats, verbose=C.DEFAULT_VERBOSE)
+    runner_cb = ans_callbacks.PlaybookRunnerCallbacks(stats, verbose=C.DEFAULT_LOGLEVEL)
     runner = ans_runner.Runner(
                 module_name=module_name,
                 module_args=' '.join(module_args),
@@ -74,8 +74,8 @@ class TestModel(unittest.TestCase):
 
     def _run_playbook(self, playbook):
         stats = ans_callbacks.AggregateStats()
-        playbook_cb = ans_callbacks.PlaybookCallbacks(verbose=C.DEFAULT_VERBOSE)
-        playbook_runner_cb = ans_callbacks.PlaybookRunnerCallbacks(stats, verbose=C.DEFAULT_VERBOSE)
+        playbook_cb = ans_callbacks.PlaybookCallbacks(verbose=C.DEFAULT_LOGLEVEL)
+        playbook_runner_cb = ans_callbacks.PlaybookRunnerCallbacks(stats, verbose=C.DEFAULT_LOGLEVEL)
         self.playbook = ans_playbook.PlayBook(
             playbook=playbook,
             host_list=TEST_HOST_LIST,

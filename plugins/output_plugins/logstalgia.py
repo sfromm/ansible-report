@@ -91,7 +91,7 @@ class OutputModule:
         hosts = []
         category = {}
         if 'verbose' not in kwargs:
-            kwargs['verbose'] = C.DEFAULT_VERBOSE
+            kwargs['verbose'] = C.DEFAULT_LOGLEVEL
         kwargs['verbose'] = bool(kwargs['verbose'])
         for event in events:
             if isinstance(event, AnsiblePlaybook):
