@@ -276,7 +276,7 @@ def _log_formatter(program, loglevel):
 
 def setup_logging(program='ansible-report', root_logger=None):
     ''' set up logging '''
-    logfile = os.path.join(pwd.getpwuid(os.getuid())[5], ".ansiblereport.log")
+    logdest = C.DEFAULT_LOGDEST
     if root_logger is None:
         root_logger = logging.getLogger("")
     root_logger.setLevel(logging.NOTSET)
@@ -299,7 +299,7 @@ def setup_logging(program='ansible-report', root_logger=None):
     numlevel = getattr(logging, loglevel.upper(), None)
     if not isinstance(numlevel, int):
         raise ValueError('Invalid log level: %s' % loglevel)
-    handler = logging.FileHandler(logfile)
+    handler = logging.FileHandler(logdest)
     handler.setFormatter(formatter)
     handler.setLevel(numlevel)
     root_logger.addHandler(handler)
