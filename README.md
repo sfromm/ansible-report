@@ -53,6 +53,13 @@ database that will be used.  The following is an example that uses a
     db.engine = sqlite
     db.name = test.sqlite
 
+Valid values for *db.engine* include:  _sqlite_, _mysql_, and
+_postgresql_.
+
+If using _MySQL_ or _PostgreSQL_, you may also need to specify the
+parameters *db.user* and *db.passwd* to specify the user and password to
+connect with.
+
 Report Configuration
 ====================
 
