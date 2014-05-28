@@ -61,6 +61,7 @@ class OutputModule:
         logging.debug("preparing to iterate over data")
         for event in events:
             tasks = []
+            logging.debug("inspecting %s.id %s", event.__class__.__name__, event.id)
             if isinstance(event, AnsiblePlaybook):
                 for task in event.tasks:
                     if is_reportable_task(task, kwargs['verbose']):
