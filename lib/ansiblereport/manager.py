@@ -207,7 +207,7 @@ class Manager(object):
         if args is not None:
             qry = _filter_query(AnsibleTask, args, timeop=timeop)
         else:
-            qry = AnsibleTask.select()
+            qry = AnsibleTask.select().naive()
         if limit and limit != 0:
             qry.limit(limit)
         logging.debug("performed task query")
@@ -219,7 +219,7 @@ class Manager(object):
         if args is not None:
             qry = _filter_query(AnsiblePlaybook, args, timeop=timeop)
         else:
-            qry = AnsiblePlaybook.select()
+            qry = AnsiblePlaybook.select().naive()
         if limit and limit != 0:
             qry.limit(limit)
         logging.debug("performed playbook query")
