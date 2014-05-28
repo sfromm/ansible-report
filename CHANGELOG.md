@@ -22,6 +22,7 @@ ansible-report Changelog
 * Overhaul how tests are done.
 * Add manage.py and migrations/ to handle migrations as schema changes happen.
 
+[View Changes](https://github.com/sfromm/ansible-report/compare/0.1...0.2)
 
 ## 0.1
 
