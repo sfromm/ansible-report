@@ -118,6 +118,7 @@ def format_heading(title, subheading=True):
 
 def format_stats(stats, heading=True):
     ''' format playbook stat data '''
+    logging.debug("formatting stats of summarized task data")
     report = ''
     if heading:
         report += format_heading('Summary', subheading=False)
@@ -153,6 +154,7 @@ def format_playbook_report(playbook, tasks, stats):
 
 def format_task_report(tasks, embedded=True):
     ''' takes list of AnsibleTask and returns string '''
+    logging.debug("formatting reported task data")
     report = ''
     report += format_heading('Tasks', subheading=embedded)
     for task in tasks:

@@ -203,22 +203,26 @@ class Manager(object):
 
     def find_tasks(self, args=None, limit=1, timeop=operator.ge):
         clauses = []
+        logging.debug("preparing task query")
         if args is not None:
             qry = _filter_query(AnsibleTask, args, timeop=timeop)
         else:
             qry = AnsibleTask.select()
         if limit and limit != 0:
             qry.limit(limit)
+        logging.debug("performed task query")
         return qry
 
     def find_playbooks(self, args=None, limit=1, timeop=operator.ge):
         clauses = []
+        logging.debug("preparing playbook query")
         if args is not None:
             qry = _filter_query(AnsiblePlaybook, args, timeop=timeop)
         else:
             qry = AnsiblePlaybook.select()
         if limit and limit != 0:
             qry.limit(limit)
+        logging.debug("performed playbook query")
         return qry
 
     def get_last_n_playbooks(self, *args, **kwargs):
