@@ -79,7 +79,7 @@ class CallbackModule(object):
     def playbook_on_start(self):
         # start of playbook, no attrs are set yet
         self.starttime = datetime.datetime.now()
-        self.playbook = None
+        self.playbook = self.mgr.log_play('NA', 'NA', self.starttime)
 
     def playbook_on_notify(self, host, handler):
         ''' reports name of host and name of handler playbook will execute '''
@@ -113,9 +113,9 @@ class CallbackModule(object):
                 play.playbook.basedir,
                 os.path.basename(play.playbook.filename)
             ))
-            self.playbook = self.mgr.log_play(
-                path, play.playbook.transport, self.starttime
-            )
+            self.playbook.path = path
+            self.playbook.connection = play.playbook.transport
+            self.mgr.save(self.playbook)
 
     def playbook_on_stats(self, stats):
         self.playbook.endtime = datetime.datetime.now()
