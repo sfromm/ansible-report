@@ -55,10 +55,10 @@ class OutputModule:
         report = ''
         report_tasks = []
         if 'verbose' not in kwargs:
-            kwargs['verbose'] = C.DEFAULT_LOGLEVEL
+            kwargs['verbose'] = C.DEFAULT_VERBOSE
         if 'stats' not in kwargs:
             kwargs['stats'] = C.DEFAULT_STATS
-        kwargs['verbose'] = bool(kwargs['verbose'])
+        kwargs['verbose'] = kwargs['verbose']
         for event in events:
             tasks = []
             if isinstance(event, AnsiblePlaybook):

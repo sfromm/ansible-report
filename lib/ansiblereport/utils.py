@@ -203,11 +203,11 @@ def is_reportable_task(task, verbose=False, embedded=True):
     returns True if okay and verbose is True
     otherwise returns False
     '''
-    if task.result in C.DEFAULT_TASK_WARN_RESULTS:
+    if task.changed:
         return True
-    if task.result in C.DEFAULT_TASK_OKAY_RESULTS:
-        if task.changed:
-            return True
+    elif task.result in C.DEFAULT_TASK_WARN_RESULTS:
+        return True
+    elif task.result in C.DEFAULT_TASK_OKAY_RESULTS:
         if verbose:
             return True
     return False

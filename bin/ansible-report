@@ -87,6 +87,7 @@ def report(options, mgr, kwargs):
     outputs = OutputPlugins([C.DEFAULT_OUTPUT_PLUGIN_PATH])
     for plugin in options.output:
         if plugin in outputs.plugins:
+            logging.info("directing data to output plugin %s", plugin)
             outputs.plugins[plugin].do_report(data, **kwargs)
     return
 
@@ -96,7 +97,8 @@ def prune_tasks(options, mgr, args):
         if age:
             args['timestamp'] = age
     count = mgr.rm_tasks(args=args)
-    if options.verbose:
+    logging.warn("Removed %s tasks from database" % count)
+    if C.DEFAULT_LOGLEVEL > 0:
         print "Removed %s tasks from database" % count
 
 def prune_playbooks(options, mgr, args):
@@ -105,7 +107,8 @@ def prune_playbooks(options, mgr, args):
         if age:
             args['starttime'] = age
     count = mgr.rm_playbooks(args=args)
-    if options.verbose:
+    logging.warn("Removed %s playbooks from database" % count)
+    if C.DEFAULT_LOGLEVEL > 0:
         print "Removed %s playbooks from database" % count
 
 def prune(options, mgr, kwargs):
@@ -114,7 +117,8 @@ def prune(options, mgr, kwargs):
     args = {}
     args = build_task_args(options)
     prune_tasks(options, mgr, args)
-    if options.verbose:
+    logging.warn("Running VACUUM")
+    if C.DEFAULT_LOGLEVEL > 0:
         print "Running VACUUM"
     mgr.vacuum()
 
@@ -127,8 +131,7 @@ def main(args):
     kwargs = {}
     usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage, version=version("%prog"))
-    parser.add_option('-v', '--verbose', action="callback",
-                      callback=increment_debug, default=C.DEFAULT_LOGLEVEL,
+    parser.add_option('-v', '--verbose', action="store_true", default=C.DEFAULT_VERBOSE,
                       help='Be verbose.  Use more than once to increase verbosity')
     parser.add_option('-o', '--output', metavar='OUTPUT',
                       action='append',
@@ -187,7 +190,7 @@ def main(args):
         for arg in options.extra_args:
             (key, val) = arg.split('=', 1)
             kwargs[key] = val
-    kwargs['verbose'] = C.DEFAULT_LOGLEVEL
+    kwargs['verbose'] = C.DEFAULT_VERBOSE
     kwargs['stats'] = options.stats
     mgr = Manager()
     if options.prune:

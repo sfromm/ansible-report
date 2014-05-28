@@ -31,6 +31,7 @@ def get_config_value(key, env_var, default):
 
 DEFAULT_SECTION = 'ansiblereport'
 
+DEFAULT_VERBOSE = False
 DEFAULT_STATS = False
 DEFAULT_LOGLEVEL = get_config_value('loglevel', 'ANSIBLEREPORT_LOGLEVEL', 0)
 DEFAULT_LOGDEST  = get_config_value('logdest', 'ANSIBLEREPORT_LOGDEST',
