@@ -27,6 +27,7 @@ import logging
 import operator
 import peewee
 import random
+import sqlite3
 import time
 import urlparse
 import uuid
@@ -54,9 +55,11 @@ def _db_error_decorator(callable):
             if lock:
                 lock.release()
             return result
-        except DatabaseError as e:
-            logging.warn("caught database error exception; will try to proceed: %s", str(e))
-        except Exception as e:
+        except sqlite3.OperationalError as exc:
+            logging.warn("caught sqlite operational error exception: %s", str(exc))
+        except DatabaseError as exc:
+            logging.warn("caught database error exception; will try to proceed: %s", str(exc))
+        except Exception as exc:
             raise
     return _wrap
 
