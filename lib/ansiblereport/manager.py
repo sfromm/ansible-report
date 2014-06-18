@@ -281,8 +281,3 @@ class Manager(object):
                     continue
                 clauses.append(c)
         return self.execute(AnsiblePlaybook.delete().where(*clauses))
-
-    def vacuum(self):
-        ''' run vacuum '''
-        if self.engine in ['sqlite']:
-            self.database.execute_sql('VACUUM')

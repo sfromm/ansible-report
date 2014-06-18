@@ -117,9 +117,6 @@ def prune(options, mgr, kwargs):
     args = {}
     args = build_task_args(options)
     prune_tasks(options, mgr, args)
-    logging.warn("Running VACUUM")
-    if C.DEFAULT_LOGLEVEL > 0:
-        print "Running VACUUM"
     mgr.vacuum()
 
 
