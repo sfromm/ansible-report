@@ -280,6 +280,8 @@ def _log_formatter(program, loglevel):
 def setup_logging(program='ansible-report', root_logger=None):
     ''' set up logging '''
     logdest = C.DEFAULT_LOGDEST
+    if not os.access(logdest, os.W_OK):
+        logdest = C.DEFAULT_USER_LOGDEST
     if root_logger is None:
         root_logger = logging.getLogger("")
     root_logger.setLevel(logging.NOTSET)

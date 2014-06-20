@@ -34,8 +34,8 @@ DEFAULT_SECTION = 'ansiblereport'
 DEFAULT_VERBOSE = False
 DEFAULT_STATS = False
 DEFAULT_LOGLEVEL = get_config_value('loglevel', 'ANSIBLEREPORT_LOGLEVEL', 0)
-DEFAULT_LOGDEST  = get_config_value('logdest', 'ANSIBLEREPORT_LOGDEST',
-                                    os.path.join(pwd.getpwuid(os.getuid())[5], ".ansiblereport.log"))
+DEFAULT_USER_LOGDEST  = os.path.join(pwd.getpwuid(os.getuid())[5], ".ansiblereport.log")
+DEFAULT_LOGDEST  = get_config_value('logdest', 'ANSIBLEREPORT_LOGDEST', DEFAULT_USER_LOGDEST)
 DEFAULT_INTERSECTION = get_config_value('intersection', 'ANSIBLEREPORT_INTERSECTION', False)
 DEFAULT_LIMIT = get_config_value('limit', 'ANSIBLEREPORT_LIMIT', 0)
 
