@@ -12,7 +12,7 @@ Source0:	%{name}-%{version}.tar.gz
 BuildArch:  noarch
 BuildRequires:	python-devel
 Requires:   python-dateutil
-Requires:   python-peewee
+#Requires:   python-peewee
 Requires:   ansible
 Provides: ansiblereport
 
