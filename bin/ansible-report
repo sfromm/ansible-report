@@ -117,7 +117,6 @@ def prune(options, mgr, kwargs):
     args = {}
     args = build_task_args(options)
     prune_tasks(options, mgr, args)
-    mgr.vacuum()
 
 
 def version(prog):
