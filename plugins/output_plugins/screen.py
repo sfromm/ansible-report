@@ -52,7 +52,6 @@ class OutputModule:
         ''' take list of events and report them to the screen '''
         self.report_stats = {}
         report_tasks = []
-        report_pbs = []
         if 'verbose' not in kwargs:
             kwargs['verbose'] = C.DEFAULT_VERBOSE
         if 'stats' not in kwargs:
