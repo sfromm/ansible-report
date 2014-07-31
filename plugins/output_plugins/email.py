@@ -39,6 +39,8 @@ class OutputModule:
     name = 'email'
 
     def _update_stats(self, host, stats):
+        if host not in self.report_stats:
+            self.report_stats[host] = {}
         if 'total' not in self.report_stats:
             self.report_stats['total'] = {}
         for key in stats:
