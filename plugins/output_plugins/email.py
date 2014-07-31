@@ -83,8 +83,8 @@ class OutputModule:
             report += format_task_report(report_tasks, embedded=False)
         if self.report_stats:
             totals = { 'total': self.report_stats.pop('total') }
-            report += format_stats(self.report_stats, heading=False)
-            report += format_stats(totals)
+            report += format_stats(self.report_stats)
+            report += format_stats(totals, heading=False)
         for arg in kwargs.keys():
             if not arg.startswith('smtp_'):
                 del kwargs[arg]
