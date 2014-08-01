@@ -161,6 +161,8 @@ def format_task_report(tasks, embedded=True):
         args = []
         report += "  {0}\n".format(format_task_brief(task, embedded))
         if 'invocation' not in task.data:
+            if 'msg' in task.data and task.data['msg']:
+                report += "    {0:>10}: {1}\n".format('Message', task.data['msg'])
             report += '\n'
             continue
         invocation = task.data['invocation']
