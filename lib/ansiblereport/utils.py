@@ -95,6 +95,11 @@ def git_version(path):
 def pretty_json(arg, indent=4):
     return json.dumps(arg, sort_keys=True, indent=indent)
 
+def format_multiline(arg, indent=8):
+    lines = arg.splitlines()
+    lines[0] = "{0}{1}".format(" " * indent, lines[0])
+    return "\n{0}".format(" " * indent).join(lines)
+
 def format_task_brief(task, embedded=True):
     ''' summarize a task into a brief string '''
     strftime = C.DEFAULT_SHORT_STRFTIME
@@ -195,6 +200,8 @@ def format_task_report(tasks, embedded=True):
         elif 'ansible_facts' in task.data:
             args.append(('Facts',
                          pretty_json(task.data['ansible_facts'], indent=8)))
+        if 'stdout' in task.data and task.data['stdout']:
+            args.append(('Stdout', "\n{0}".format(format_multiline(task.data['stdout'], indent=12))))
         for arg in args:
             report += "    {0:>10}: {1}\n".format(arg[0], arg[1])
         report += '\n'
