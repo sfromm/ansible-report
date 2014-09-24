@@ -202,6 +202,8 @@ def format_task_report(tasks, embedded=True):
                          pretty_json(task.data['ansible_facts'], indent=8)))
         if 'stdout' in task.data and task.data['stdout']:
             args.append(('Stdout', "\n{0}".format(format_multiline(task.data['stdout'], indent=12))))
+        if 'stderr' in task.data and task.data['stderr']:
+            args.append(('Stderr', "\n{0}".format(format_multiline(task.data['stderr'], indent=12))))
         for arg in args:
             report += "    {0:>10}: {1}\n".format(arg[0], arg[1])
         report += '\n'
