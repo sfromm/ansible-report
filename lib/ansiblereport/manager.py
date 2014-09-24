@@ -212,7 +212,7 @@ class Manager(object):
         else:
             qry = AnsibleTask.select().naive()
         if limit and limit != 0:
-            qry.limit(limit)
+            qry = qry.limit(limit)
         logging.debug("performed task query")
         return qry
 
@@ -224,7 +224,7 @@ class Manager(object):
         else:
             qry = AnsiblePlaybook.select().naive()
         if limit and limit != 0:
-            qry.limit(limit)
+            qry = qry.limit(limit)
         logging.debug("performed playbook query")
         return qry
 
