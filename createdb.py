@@ -28,10 +28,15 @@ def main(args):
     parser.add_option('-v', '--verbose', action="callback",
                       callback=increment_debug, default=C.DEFAULT_LOGLEVEL,
                       help='Be verbose.  Use more than once to increase verbosity')
+    parser.add_option('-m', '--mode', 
+                      help='File permission/mode if SQLite')
     options, args = parser.parse_args()
     setup_logging('createdb')
     mgr = Manager()
     mgr.create_tables()
+    if 'sqlite' in mgr.engine:
+        mgr.database.execute_sql("PRAGMA journal_mode = wal")
+        os.chmod(mgr.name, options.mode)
     return 0
 
 if __name__ == '__main__':
