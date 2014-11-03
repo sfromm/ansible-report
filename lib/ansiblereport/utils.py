@@ -97,7 +97,7 @@ def pretty_json(arg, indent=4):
 
 def format_multiline(arg, indent=8):
     lines = arg.splitlines()
-    lines[0] = "{0}{1}".format(" " * indent, lines[0])
+    lines[0] = "{0}{1}".format(" " * indent, lines[0].encode('utf-8'))
     return "\n{0}".format(" " * indent).join(lines)
 
 def format_task_brief(task, embedded=True):
