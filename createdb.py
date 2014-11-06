@@ -28,7 +28,7 @@ def main(args):
     parser.add_option('-v', '--verbose', action="callback",
                       callback=increment_debug, default=C.DEFAULT_LOGLEVEL,
                       help='Be verbose.  Use more than once to increase verbosity')
-    parser.add_option('-m', '--mode', 
+    parser.add_option('-m', '--mode', type='int',
                       help='File permission/mode if SQLite')
     options, args = parser.parse_args()
     setup_logging('createdb')
